@@ -10,4 +10,10 @@ parameters:
         - database/
         - routes/
 
+    # Spatie's own published stub references Media Library Pro's optional
+    # TemporaryUpload model, which isn't installed and isn't needed unless
+    # Media Library Pro is added later.
+    excludePaths:
+        - config/media-library.php
+
     level: 7
