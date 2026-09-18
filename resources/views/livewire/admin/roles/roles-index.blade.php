@@ -15,7 +15,7 @@
     <x-ui.card :padded="false">
         <div class="border-b border-gray-100 p-4 dark:border-white/10">
             <div class="max-w-xs">
-                <x-forms.input type="search" wire:model.live.debounce.300ms="search" placeholder="Search roles..." />
+                <x-forms.input type="search" icon="search" wire:model.live.debounce.300ms="search" placeholder="Search roles..." />
             </div>
         </div>
 

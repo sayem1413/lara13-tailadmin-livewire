@@ -93,6 +93,46 @@ it("automatically grants a module's index permission when a write permission is 
         ->and($role->hasPermissionTo('admin.users.index'))->toBeTrue();
 });
 
+it("checks a module's whole permission group at once, then unchecks it again", function () {
+    Artisan::call('permissions:sync');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    $usersPermissions = Permission::query()->where('module', 'users')->pluck('name')->all();
+
+    $component = Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->call('toggleGroup', $usersPermissions);
+
+    foreach ($usersPermissions as $name) {
+        expect($component->get('selectedPermissions'))->toContain($name);
+    }
+
+    $component->call('toggleGroup', $usersPermissions);
+
+    expect($component->get('selectedPermissions'))->toBe([]);
+});
+
+it('checks every permission at once via the global toggle, then unchecks them all', function () {
+    Artisan::call('permissions:sync');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    $everyPermission = Permission::query()->pluck('name')->all();
+
+    $component = Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->call('toggleAllPermissions');
+
+    expect($component->get('selectedPermissions'))->toEqualCanonicalizing($everyPermission);
+
+    $component->call('toggleAllPermissions');
+
+    expect($component->get('selectedPermissions'))->toBe([]);
+});
+
 it('forbids opening the edit form for the Super Admin role even for a Super Admin actor', function () {
     Role::findOrCreate('Super Admin');
 

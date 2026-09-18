@@ -11,22 +11,22 @@
 
         <div>
             <x-forms.label for="email">Email</x-forms.label>
-            <x-forms.input type="email" name="email" id="email" value="{{ old('email', $request->email) }}" required autofocus />
+            <x-forms.input type="email" icon="mail" name="email" id="email" value="{{ old('email', $request->email) }}" required autofocus />
             <x-forms.error for="email" />
         </div>
 
         <div>
             <x-forms.label for="password">New Password</x-forms.label>
-            <x-forms.input type="password" name="password" id="password" required autocomplete="new-password" />
+            <x-forms.password meter name="password" id="password" required autocomplete="new-password" />
             <x-forms.error for="password" />
         </div>
 
         <div>
             <x-forms.label for="password_confirmation">Confirm Password</x-forms.label>
-            <x-forms.input type="password" name="password_confirmation" id="password_confirmation" required autocomplete="new-password" />
+            <x-forms.password name="password_confirmation" id="password_confirmation" required autocomplete="new-password" />
             <x-forms.error for="password_confirmation" />
         </div>
 
-        <x-ui.button type="submit" class="w-full">Reset Password</x-ui.button>
+        <x-ui.button type="submit" class="w-full" loading-text="Resetting...">Reset Password</x-ui.button>
     </form>
 </x-guest-layout>

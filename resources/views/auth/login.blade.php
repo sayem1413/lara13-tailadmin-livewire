@@ -11,13 +11,13 @@
 
         <div>
             <x-forms.label for="email">Email</x-forms.label>
-            <x-forms.input type="email" name="email" id="email" value="{{ old('email') }}" required autofocus autocomplete="username" />
+            <x-forms.input type="email" icon="mail" name="email" id="email" value="{{ old('email') }}" required autofocus autocomplete="username" />
             <x-forms.error for="email" />
         </div>
 
         <div>
             <x-forms.label for="password">Password</x-forms.label>
-            <x-forms.input type="password" name="password" id="password" required autocomplete="current-password" />
+            <x-forms.password name="password" id="password" required autocomplete="current-password" />
             <x-forms.error for="password" />
         </div>
 
@@ -34,6 +34,6 @@
             @endif
         </div>
 
-        <x-ui.button type="submit" class="w-full">Sign In</x-ui.button>
+        <x-ui.button type="submit" class="w-full" loading-text="Signing in...">Sign In</x-ui.button>
     </form>
 </x-guest-layout>

@@ -11,11 +11,11 @@
 
         <div>
             <x-forms.label for="email">Email</x-forms.label>
-            <x-forms.input type="email" name="email" id="email" value="{{ old('email') }}" required autofocus />
+            <x-forms.input type="email" icon="mail" name="email" id="email" value="{{ old('email') }}" required autofocus />
             <x-forms.error for="email" />
         </div>
 
-        <x-ui.button type="submit" class="w-full">Email Password Reset Link</x-ui.button>
+        <x-ui.button type="submit" class="w-full" loading-text="Sending...">Email Password Reset Link</x-ui.button>
     </form>
 
     <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">

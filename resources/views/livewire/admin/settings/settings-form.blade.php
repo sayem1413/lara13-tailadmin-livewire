@@ -27,7 +27,7 @@
                                         @endforeach
                                     </x-forms.select>
                                 @else
-                                    <x-forms.input type="text" id="{{ $key }}" wire:model="values.{{ $key }}" />
+                                    <x-forms.input type="text" :icon="$field['icon'] ?? null" id="{{ $key }}" wire:model="values.{{ $key }}" />
                                 @endif
                             @endif
 
@@ -38,6 +38,6 @@
             </x-ui.card>
         @endforeach
 
-        <x-ui.button type="submit">Save Settings</x-ui.button>
+        <x-ui.button type="submit" loading-text="Saving...">Save Settings</x-ui.button>
     </form>
 </div>

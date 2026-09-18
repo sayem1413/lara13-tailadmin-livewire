@@ -9,16 +9,16 @@
     </div>
 
     <form wire:submit="save" class="max-w-2xl space-y-5">
-        <x-ui.card class="space-y-5">
+        <x-ui.card title="Details" class="space-y-5">
             <div>
                 <x-forms.label for="name">Name</x-forms.label>
-                <x-forms.input type="text" id="name" wire:model="name" required />
+                <x-forms.input type="text" icon="user-circle" id="name" wire:model="name" required />
                 <x-forms.error for="name" />
             </div>
 
             <div>
                 <x-forms.label for="email">Email</x-forms.label>
-                <x-forms.input type="email" id="email" wire:model="email" required />
+                <x-forms.input type="email" icon="mail" id="email" wire:model="email" required />
                 <x-forms.error for="email" />
             </div>
 
@@ -27,7 +27,7 @@
                     <x-forms.label for="password">
                         {{ $userId ? 'New Password' : 'Password' }}
                     </x-forms.label>
-                    <x-forms.input type="password" id="password" wire:model="password" autocomplete="new-password" />
+                    <x-forms.password meter id="password" wire:model="password" autocomplete="new-password" />
                     @if ($userId)
                         <p class="mt-1 text-xs text-gray-400">Leave blank to keep the current password.</p>
                     @endif
@@ -36,7 +36,7 @@
 
                 <div>
                     <x-forms.label for="password_confirmation">Confirm Password</x-forms.label>
-                    <x-forms.input type="password" id="password_confirmation" wire:model="password_confirmation" autocomplete="new-password" />
+                    <x-forms.password id="password_confirmation" wire:model="password_confirmation" autocomplete="new-password" />
                 </div>
             </div>
 
@@ -47,21 +47,20 @@
         </x-ui.card>
 
         <x-ui.card title="Roles">
-            <div class="flex flex-wrap gap-4">
-                @forelse ($availableRoles as $roleName)
-                    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <x-forms.checkbox wire:model="selectedRoles" value="{{ $roleName }}" />
-                        {{ $roleName }}
-                    </label>
-                @empty
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No roles available yet.</p>
-                @endforelse
-            </div>
+            @if (empty($availableRoles))
+                <p class="text-sm text-gray-500 dark:text-gray-400">No roles available yet.</p>
+            @else
+                <x-forms.select searchable multiple wire:model="selectedRoles" id="selectedRoles" placeholder="Assign roles...">
+                    @foreach ($availableRoles as $roleName)
+                        <option value="{{ $roleName }}" @selected(in_array($roleName, $selectedRoles, true))>{{ $roleName }}</option>
+                    @endforeach
+                </x-forms.select>
+            @endif
             <x-forms.error for="selectedRoles" />
         </x-ui.card>
 
         <div class="flex items-center gap-3">
-            <x-ui.button type="submit">Save</x-ui.button>
+            <x-ui.button type="submit" loading-text="Saving...">Save</x-ui.button>
             <a href="{{ route('admin.users.index') }}">
                 <x-ui.button type="button" variant="secondary">Cancel</x-ui.button>
             </a>

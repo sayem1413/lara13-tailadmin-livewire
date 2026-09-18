@@ -15,21 +15,25 @@
     <x-ui.card :padded="false">
         <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4 dark:border-white/10">
             <div class="min-w-[220px] flex-1">
-                <x-forms.input type="search" wire:model.live.debounce.300ms="search" placeholder="Search name or email..." />
+                <x-forms.input type="search" icon="search" wire:model.live.debounce.300ms="search" placeholder="Search name or email..." />
             </div>
 
-            <select wire:model.live="role" class="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-white/90">
-                <option value="">All roles</option>
-                @foreach ($this->roleOptions as $roleName)
-                    <option value="{{ $roleName }}">{{ $roleName }}</option>
-                @endforeach
-            </select>
+            <div class="w-44">
+                <x-forms.select searchable wire:model.live="role">
+                    <option value="">All roles</option>
+                    @foreach ($this->roleOptions as $roleName)
+                        <option value="{{ $roleName }}">{{ $roleName }}</option>
+                    @endforeach
+                </x-forms.select>
+            </div>
 
-            <select wire:model.live="status" class="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-white/90">
-                <option value="">All statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
+            <div class="w-40">
+                <x-forms.select wire:model.live="status">
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </x-forms.select>
+            </div>
 
             @if (! empty($selected))
                 <div class="ml-auto flex items-center gap-2">

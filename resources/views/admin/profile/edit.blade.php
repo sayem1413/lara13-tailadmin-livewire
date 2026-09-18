@@ -13,35 +13,27 @@
             @csrf
             @method('PUT')
 
-            <div class="flex items-center gap-4">
-                @if ($user->avatarUrl())
-                    <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="size-16 rounded-full object-cover" />
-                @else
-                    <span class="flex size-16 items-center justify-center rounded-full bg-brand-50 text-lg font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
-                        {{ $user->initials() }}
-                    </span>
-                @endif
-
-                <div>
-                    <x-forms.label for="avatar">Avatar</x-forms.label>
-                    <input type="file" name="avatar" id="avatar" accept="image/*" class="block text-sm text-gray-600 dark:text-gray-300" />
-                    <x-forms.error for="avatar" bag="updateProfileInformation" />
+            <div>
+                <x-forms.label for="avatar">Avatar</x-forms.label>
+                <div class="max-w-xs">
+                    <x-forms.file-upload name="avatar" id="avatar" :preview="$user->avatarUrl()" :max-size-mb="2" bag="updateProfileInformation" />
                 </div>
+                <x-forms.error for="avatar" bag="updateProfileInformation" />
             </div>
 
             <div>
                 <x-forms.label for="name">Name</x-forms.label>
-                <x-forms.input type="text" name="name" id="name" value="{{ old('name', $user->name) }}" required />
+                <x-forms.input type="text" icon="user-circle" name="name" id="name" value="{{ old('name', $user->name) }}" required />
                 <x-forms.error for="name" bag="updateProfileInformation" />
             </div>
 
             <div>
                 <x-forms.label for="email">Email</x-forms.label>
-                <x-forms.input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" required />
+                <x-forms.input type="email" icon="mail" name="email" id="email" value="{{ old('email', $user->email) }}" required />
                 <x-forms.error for="email" bag="updateProfileInformation" />
             </div>
 
-            <x-ui.button type="submit">Save Changes</x-ui.button>
+            <x-ui.button type="submit" loading-text="Saving...">Save Changes</x-ui.button>
         </form>
     </x-ui.card>
 </x-app-layout>

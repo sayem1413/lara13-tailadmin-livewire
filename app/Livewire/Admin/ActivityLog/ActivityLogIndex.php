@@ -27,6 +27,13 @@ class ActivityLogIndex extends Component
     #[Url]
     public string $subjectType = '';
 
+    /**
+     * Flatpickr's range-mode value, formatted "Y-m-d to Y-m-d" (or a
+     * single "Y-m-d" while the end date hasn't been picked yet).
+     */
+    #[Url]
+    public string $dateRange = '';
+
     public function mount(): void
     {
         Gate::authorize('admin.activity-log.index');
@@ -76,6 +83,12 @@ class ActivityLogIndex extends Component
             })
             ->when($this->event !== '', fn (Builder $query) => $query->where('event', $this->event))
             ->when($this->subjectType !== '', fn (Builder $query) => $query->where('subject_type', $this->subjectType))
+            ->when($this->dateRange !== '', function (Builder $query) {
+                [$from, $to] = array_pad(array_map('trim', explode(' to ', $this->dateRange, 2)), 2, null);
+
+                $query->when($from, fn (Builder $query) => $query->whereDate('created_at', '>=', $from))
+                    ->when($to, fn (Builder $query) => $query->whereDate('created_at', '<=', $to));
+            })
             ->latest()
             ->paginate(15);
     }

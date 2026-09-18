@@ -81,6 +81,36 @@ class RoleForm extends Component
     }
 
     /**
+     * Checks every permission in the given module if any of them aren't
+     * already selected, otherwise unchecks the whole module.
+     *
+     * @param  array<int, string>  $namesInGroup
+     */
+    public function toggleGroup(array $namesInGroup): void
+    {
+        $allSelected = empty(array_diff($namesInGroup, $this->selectedPermissions));
+
+        $this->selectedPermissions = $allSelected
+            ? array_values(array_diff($this->selectedPermissions, $namesInGroup))
+            : array_values(array_unique([...$this->selectedPermissions, ...$namesInGroup]));
+
+        $this->selectedPermissions = $this->expandSelectedPermissions($this->selectedPermissions);
+    }
+
+    /**
+     * Checks every permission across every module, or unchecks all of them
+     * if everything is already checked.
+     */
+    public function toggleAllPermissions(): void
+    {
+        $allNames = Permission::query()->pluck('name')->all();
+
+        $allSelected = empty(array_diff($allNames, $this->selectedPermissions));
+
+        $this->selectedPermissions = $allSelected ? [] : $allNames;
+    }
+
+    /**
      * The given permission names, plus any module-level view permissions
      * they imply. Re-applied on save (not just on the live update above) so
      * a direct/tampered request can't submit a write permission without its

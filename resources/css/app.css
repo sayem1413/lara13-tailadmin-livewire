@@ -27,3 +27,109 @@
         display: none !important;
     }
 }
+
+/*
+ * Choices.js ships its own default theme with fixed class names it
+ * generates itself (not controllable from Blade), so it's restyled here
+ * with plain CSS to match the app's input styling instead of Tailwind
+ * utility classes.
+ */
+@layer components {
+    .choices {
+        margin-bottom: 0;
+    }
+
+    .choices__inner {
+        display: block;
+        min-height: 0;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5dc;
+        background-color: #fff;
+        padding: 0.4rem 1rem;
+        font-size: 0.875rem;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    }
+
+    .choices.is-focused .choices__inner,
+    .choices.is-open .choices__inner {
+        border-color: var(--color-brand-500);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand-500) 10%, transparent);
+    }
+
+    .choices__list--dropdown,
+    .choices__list[aria-expanded] {
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+
+    .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        background-color: var(--color-brand-50);
+        color: var(--color-brand-700);
+    }
+
+    .choices__list--multiple .choices__item {
+        border-radius: 9999px;
+        border: none;
+        background-color: var(--color-brand-50);
+        color: var(--color-brand-700);
+        padding: 0.2rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .choices__list--multiple .choices__item .choices__button {
+        border-left-color: color-mix(in oklab, var(--color-brand-700) 30%, transparent);
+    }
+
+    .dark .choices__inner {
+        border-color: rgb(255 255 255 / 0.1);
+        background-color: rgb(255 255 255 / 0.05);
+        color: rgb(255 255 255 / 0.9);
+    }
+
+    .dark .choices__list--dropdown,
+    .dark .choices__list[aria-expanded] {
+        border-color: rgb(255 255 255 / 0.1);
+        background-color: #1e2635;
+        color: rgb(255 255 255 / 0.9);
+    }
+
+    .dark .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        background-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
+        color: var(--color-brand-400);
+    }
+
+    .dark .choices__input {
+        background-color: transparent;
+        color: rgb(255 255 255 / 0.9);
+    }
+
+    .dark .choices__list--multiple .choices__item {
+        background-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
+        color: var(--color-brand-400);
+    }
+}
+
+/*
+ * Flatpickr's calendar popup is similarly restyled here rather than via
+ * Blade, since it's rendered by the library into a detached DOM node.
+ */
+@layer components {
+    .flatpickr-day.selected,
+    .flatpickr-day.selected:hover {
+        background: var(--color-brand-500);
+        border-color: var(--color-brand-500);
+    }
+
+    .flatpickr-day.inRange {
+        background: var(--color-brand-50);
+        border-color: var(--color-brand-50);
+        box-shadow:
+            -5px 0 0 var(--color-brand-50),
+            5px 0 0 var(--color-brand-50);
+    }
+
+    .flatpickr-day.today {
+        border-color: var(--color-brand-500);
+    }
+}

@@ -15,23 +15,23 @@
 
             <div>
                 <x-forms.label for="current_password">Current Password</x-forms.label>
-                <x-forms.input type="password" name="current_password" id="current_password" required autocomplete="current-password" />
+                <x-forms.password name="current_password" id="current_password" bag="updatePassword" required autocomplete="current-password" />
                 <x-forms.error for="current_password" bag="updatePassword" />
             </div>
 
             <div>
                 <x-forms.label for="password">New Password</x-forms.label>
-                <x-forms.input type="password" name="password" id="password" required autocomplete="new-password" />
+                <x-forms.password meter name="password" id="password" bag="updatePassword" required autocomplete="new-password" />
                 <x-forms.error for="password" bag="updatePassword" />
             </div>
 
             <div>
                 <x-forms.label for="password_confirmation">Confirm New Password</x-forms.label>
-                <x-forms.input type="password" name="password_confirmation" id="password_confirmation" required autocomplete="new-password" />
+                <x-forms.password name="password_confirmation" id="password_confirmation" bag="updatePassword" required autocomplete="new-password" />
                 <x-forms.error for="password_confirmation" bag="updatePassword" />
             </div>
 
-            <x-ui.button type="submit">Update Password</x-ui.button>
+            <x-ui.button type="submit" loading-text="Updating...">Update Password</x-ui.button>
         </form>
     </x-ui.card>
 </x-app-layout>

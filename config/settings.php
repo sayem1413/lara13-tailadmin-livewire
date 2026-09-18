@@ -7,8 +7,9 @@
 |
 | Defines the key-value settings editable from the Settings page, grouped
 | into cards. Each field has a "type" (text, textarea, boolean, or select
-| - select also needs an "options" map of value => label) and a "default"
-| used until a value is saved to the settings table. Add new groups/fields
+| - select also needs an "options" map of value => label), a "default"
+| used until a value is saved to the settings table, and an optional
+| "icon" (see x-ui.icon) shown inside a text field. Add new groups/fields
 | here to extend the Settings page - no view or component changes needed.
 |
 */
@@ -26,6 +27,7 @@ return [
             'support_email' => [
                 'label' => 'Support Email',
                 'type' => 'text',
+                'icon' => 'mail',
                 'default' => null,
             ],
             'maintenance_mode' => [

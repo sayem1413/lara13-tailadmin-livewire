@@ -7,22 +7,30 @@
     <x-ui.card :padded="false">
         <div class="flex flex-wrap items-center gap-4 border-b border-gray-100 p-4 dark:border-white/10">
             <div class="max-w-xs flex-1">
-                <x-forms.input type="search" wire:model.live.debounce.300ms="search" placeholder="Search description or causer..." />
+                <x-forms.input type="search" icon="search" wire:model.live.debounce.300ms="search" placeholder="Search description or causer..." />
             </div>
 
-            <x-forms.select wire:model.live="event" class="w-auto">
-                <option value="">All events</option>
-                @foreach ($this->eventOptions as $option)
-                    <option value="{{ $option }}">{{ ucfirst($option) }}</option>
-                @endforeach
-            </x-forms.select>
+            <div class="w-40">
+                <x-forms.select wire:model.live="event">
+                    <option value="">All events</option>
+                    @foreach ($this->eventOptions as $option)
+                        <option value="{{ $option }}">{{ ucfirst($option) }}</option>
+                    @endforeach
+                </x-forms.select>
+            </div>
 
-            <x-forms.select wire:model.live="subjectType" class="w-auto">
-                <option value="">All subjects</option>
-                @foreach ($this->subjectTypeOptions as $value => $label)
-                    <option value="{{ $value }}">{{ $label }}</option>
-                @endforeach
-            </x-forms.select>
+            <div class="w-40">
+                <x-forms.select wire:model.live="subjectType">
+                    <option value="">All subjects</option>
+                    @foreach ($this->subjectTypeOptions as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </x-forms.select>
+            </div>
+
+            <div class="w-56">
+                <x-forms.date-picker range wire:model.live.debounce.300ms="dateRange" />
+            </div>
         </div>
 
         <div class="overflow-x-auto">
