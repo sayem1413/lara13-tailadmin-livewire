@@ -1,24 +1,24 @@
 <?php
 
 use App\Livewire\Admin\Users\UserForm;
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
-it('forbids rendering the create form without the users.create permission', function () {
+it('forbids rendering the create form without the admin.users.create permission', function () {
     $actor = User::factory()->create();
 
     Livewire::actingAs($actor)->test(UserForm::class)->assertForbidden();
 });
 
 it('creates a user with the submitted roles', function () {
-    Permission::findOrCreate('users.create');
+    Permission::findOrCreate('admin.users.create');
     Role::findOrCreate('Editor');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.create');
+    $actor->givePermissionTo('admin.users.create');
 
     Livewire::actingAs($actor)
         ->test(UserForm::class)
@@ -38,9 +38,9 @@ it('creates a user with the submitted roles', function () {
 });
 
 it('requires a password when creating a user', function () {
-    Permission::findOrCreate('users.create');
+    Permission::findOrCreate('admin.users.create');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.create');
+    $actor->givePermissionTo('admin.users.create');
 
     Livewire::actingAs($actor)
         ->test(UserForm::class)
@@ -51,9 +51,9 @@ it('requires a password when creating a user', function () {
 });
 
 it('rejects a duplicate email', function () {
-    Permission::findOrCreate('users.create');
+    Permission::findOrCreate('admin.users.create');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.create');
+    $actor->givePermissionTo('admin.users.create');
 
     User::factory()->create(['email' => 'taken@example.com']);
 
@@ -68,9 +68,9 @@ it('rejects a duplicate email', function () {
 });
 
 it('updates an existing user without changing the password when left blank', function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create(['name' => 'Old Name', 'password' => 'original-password']);
 
@@ -87,9 +87,9 @@ it('updates an existing user without changing the password when left blank', fun
 });
 
 it('updates the password when one is provided', function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create(['password' => 'original-password']);
 
@@ -103,11 +103,11 @@ it('updates the password when one is provided', function () {
 });
 
 it('forbids opening the edit form for a Super Admin unless the actor is also a Super Admin', function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create();
     $target->assignRole('Super Admin');
@@ -118,11 +118,11 @@ it('forbids opening the edit form for a Super Admin unless the actor is also a S
 });
 
 it('cannot assign the Super Admin role to another user without the Super Admin role', function () {
-    Permission::findOrCreate('users.create');
+    Permission::findOrCreate('admin.users.create');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.create');
+    $actor->givePermissionTo('admin.users.create');
 
     Livewire::actingAs($actor)
         ->test(UserForm::class)

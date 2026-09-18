@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Permission\Permission;
 use App\Models\User;
 use App\Services\MenuService;
 use Illuminate\Support\Facades\Route;
-use Spatie\Permission\Models\Permission;
 
 /**
  * Registers a throwaway named route and forces the router to re-index its

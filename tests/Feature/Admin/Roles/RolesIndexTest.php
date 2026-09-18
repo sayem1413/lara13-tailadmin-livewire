@@ -1,27 +1,27 @@
 <?php
 
 use App\Livewire\Admin\Roles\RolesIndex;
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use App\Models\User;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 it('redirects a guest to the login page', function () {
     $this->get(route('admin.roles.index'))->assertRedirect(route('login'));
 });
 
-it('forbids a user without the roles.view permission', function () {
+it('forbids a user without the admin.roles.index permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('admin.roles.index'))->assertForbidden();
 });
 
 it('lists roles with their permission and user counts', function () {
-    Permission::findOrCreate('roles.view');
+    Permission::findOrCreate('admin.roles.index');
     Permission::findOrCreate('some.permission');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.view');
+    $actor->givePermissionTo('admin.roles.index');
 
     $role = Role::findOrCreate('Editor');
     $role->givePermissionTo('some.permission');
@@ -34,9 +34,9 @@ it('lists roles with their permission and user counts', function () {
 });
 
 it('deletes a role with no users assigned', function () {
-    Permission::findOrCreate('roles.delete');
+    Permission::findOrCreate('admin.roles.destroy');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.delete');
+    $actor->givePermissionTo('admin.roles.destroy');
 
     $role = Role::findOrCreate('Editor');
 
@@ -48,9 +48,9 @@ it('deletes a role with no users assigned', function () {
 });
 
 it('refuses to delete a role that still has users assigned', function () {
-    Permission::findOrCreate('roles.delete');
+    Permission::findOrCreate('admin.roles.destroy');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.delete');
+    $actor->givePermissionTo('admin.roles.destroy');
 
     $role = Role::findOrCreate('Editor');
     User::factory()->create()->assignRole($role);

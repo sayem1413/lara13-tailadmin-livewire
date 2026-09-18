@@ -1,40 +1,40 @@
 <?php
 
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use App\Models\User;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
-it('denies updating the Super Admin role even with roles.update permission', function () {
+it('denies updating the Super Admin role even with admin.roles.edit permission', function () {
     Role::findOrCreate('Super Admin');
-    Permission::findOrCreate('roles.update');
+    Permission::findOrCreate('admin.roles.edit');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.update');
+    $actor->givePermissionTo('admin.roles.edit');
 
     expect($actor->can('update', Role::findByName('Super Admin')))->toBeFalse();
 });
 
-it('denies deleting the Super Admin role even with roles.delete permission', function () {
+it('denies deleting the Super Admin role even with admin.roles.destroy permission', function () {
     Role::findOrCreate('Super Admin');
-    Permission::findOrCreate('roles.delete');
+    Permission::findOrCreate('admin.roles.destroy');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.delete');
+    $actor->givePermissionTo('admin.roles.destroy');
 
     expect($actor->can('delete', Role::findByName('Super Admin')))->toBeFalse();
 });
 
-it('allows updating a non-protected role with the roles.update permission', function () {
-    Permission::findOrCreate('roles.update');
+it('allows updating a non-protected role with the admin.roles.edit permission', function () {
+    Permission::findOrCreate('admin.roles.edit');
     $role = Role::findOrCreate('Editor');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('roles.update');
+    $actor->givePermissionTo('admin.roles.edit');
 
     expect($actor->can('update', $role))->toBeTrue();
 });
 
-it('denies updating a role without the roles.update permission', function () {
+it('denies updating a role without the admin.roles.edit permission', function () {
     $role = Role::findOrCreate('Editor');
     $actor = User::factory()->create();
 

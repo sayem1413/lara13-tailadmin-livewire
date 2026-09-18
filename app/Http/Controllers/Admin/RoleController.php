@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Permission\Role;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {

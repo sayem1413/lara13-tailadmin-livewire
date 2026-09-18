@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Permission\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
-use Spatie\Permission\Models\Role;
 
 class DashboardController extends Controller
 {

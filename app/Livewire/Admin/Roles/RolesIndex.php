@@ -2,13 +2,13 @@
 
 namespace App\Livewire\Admin\Roles;
 
+use App\Models\Permission\Role;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Spatie\Permission\Models\Role;
 
 class RolesIndex extends Component
 {

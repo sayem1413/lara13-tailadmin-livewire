@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Roles;
 
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -9,8 +11,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class RoleForm extends Component
 {
@@ -62,11 +62,45 @@ class RoleForm extends Component
 
         $role->name = $validated['name'];
         $role->save();
-        $role->syncPermissions($validated['selectedPermissions']);
+        $role->syncPermissions($this->expandSelectedPermissions($validated['selectedPermissions']));
 
         session()->flash('success', $this->roleId ? 'Role updated.' : 'Role created.');
 
         $this->redirect(route('admin.roles.index'));
+    }
+
+    /**
+     * Auto-check a module's implied view permissions as soon as one of its
+     * write permissions is checked, so the matrix visibly reflects that a
+     * role able to create, edit, or delete a record must also be able to
+     * see it (see Permission::IMPLYING_SECTIONS).
+     */
+    public function updatedSelectedPermissions(): void
+    {
+        $this->selectedPermissions = $this->expandSelectedPermissions($this->selectedPermissions);
+    }
+
+    /**
+     * The given permission names, plus any module-level view permissions
+     * they imply. Re-applied on save (not just on the live update above) so
+     * a direct/tampered request can't submit a write permission without its
+     * implied view permission.
+     *
+     * @param  array<int, string>  $names
+     * @return array<int, string>
+     */
+    protected function expandSelectedPermissions(array $names): array
+    {
+        if ($names === []) {
+            return $names;
+        }
+
+        $ids = Permission::query()->whereIn('name', $names)->pluck('id')->all();
+
+        return Permission::query()
+            ->whereIn('id', Permission::expandWithImplied($ids))
+            ->pluck('name')
+            ->all();
     }
 
     /**
@@ -81,17 +115,17 @@ class RoleForm extends Component
     }
 
     /**
-     * Permissions grouped by their module prefix (the part before the
-     * first dot, e.g. "users" for "users.view") for the checkbox matrix.
+     * Permissions grouped by module (e.g. "users") for the checkbox matrix.
      *
      * @return Collection<int|string, EloquentCollection<int, Permission>>
      */
     protected function permissionGroups(): Collection
     {
         return Permission::query()
-            ->orderBy('name')
+            ->orderBy('module')
+            ->orderBy('section')
             ->get()
-            ->groupBy(fn (Permission $permission) => str($permission->name)->before('.')->toString());
+            ->groupBy(fn (Permission $permission): string => $permission->module ?? $permission->name);
     }
 
     public function render(): View

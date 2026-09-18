@@ -1,25 +1,25 @@
 <?php
 
 use App\Livewire\Admin\Users\UsersIndex;
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use App\Models\User;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 it('redirects a guest to the login page', function () {
     $this->get(route('admin.users.index'))->assertRedirect(route('login'));
 });
 
-it('forbids a user without the users.view permission', function () {
+it('forbids a user without the admin.users.index permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
 });
 
-it('renders the users list for a user with the users.view permission', function () {
-    Permission::findOrCreate('users.view');
+it('renders the users list for a user with the admin.users.index permission', function () {
+    Permission::findOrCreate('admin.users.index');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.view');
+    $actor->givePermissionTo('admin.users.index');
 
     User::factory()->create(['name' => 'Jane Searchable']);
 
@@ -68,9 +68,9 @@ it('filters the list by active status', function () {
 });
 
 it("toggles a user's active status", function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create(['is_active' => true]);
 
@@ -82,11 +82,11 @@ it("toggles a user's active status", function () {
 });
 
 it("forbids toggling a Super Admin's status without the Super Admin role", function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create(['is_active' => true]);
     $target->assignRole('Super Admin');
@@ -100,9 +100,9 @@ it("forbids toggling a Super Admin's status without the Super Admin role", funct
 });
 
 it('soft deletes a user', function () {
-    Permission::findOrCreate('users.delete');
+    Permission::findOrCreate('admin.users.destroy');
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.delete');
+    $actor->givePermissionTo('admin.users.destroy');
 
     $target = User::factory()->create();
 
@@ -115,11 +115,11 @@ it('soft deletes a user', function () {
 });
 
 it('only activates the users the actor is allowed to update in a bulk action', function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $allowed = User::factory()->create(['is_active' => false]);
     $superAdmin = User::factory()->create(['is_active' => false]);

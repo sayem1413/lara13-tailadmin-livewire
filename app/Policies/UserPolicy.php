@@ -8,26 +8,26 @@ class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('users.view');
+        return $user->can('admin.users.index');
     }
 
     public function view(User $user, User $model): bool
     {
-        return $user->can('users.view');
+        return $user->can('admin.users.index');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('users.create');
+        return $user->can('admin.users.create');
     }
 
     /**
      * Only a Super Admin may edit another Super Admin's account, regardless
-     * of who else holds the users.update permission.
+     * of who else holds the admin.users.edit permission.
      */
     public function update(User $user, User $model): bool
     {
-        if (! $user->can('users.update')) {
+        if (! $user->can('admin.users.edit')) {
             return false;
         }
 
@@ -40,7 +40,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        if (! $user->can('users.delete') || $model->is($user)) {
+        if (! $user->can('admin.users.destroy') || $model->is($user)) {
             return false;
         }
 

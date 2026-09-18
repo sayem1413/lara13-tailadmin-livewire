@@ -34,8 +34,8 @@
                                     <div class="flex flex-wrap gap-4">
                                         @foreach ($permissions as $permission)
                                             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                                <x-forms.checkbox wire:model="selectedPermissions" value="{{ $permission->name }}" />
-                                                {{ str($permission->name)->after('.') }}
+                                                <x-forms.checkbox wire:model.live="selectedPermissions" value="{{ $permission->name }}" />
+                                                {{ Str::headline($permission->section ?? $permission->name) }}
                                             </label>
                                         @endforeach
                                     </div>

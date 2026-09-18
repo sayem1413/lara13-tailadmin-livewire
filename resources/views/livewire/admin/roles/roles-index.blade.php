@@ -5,7 +5,7 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Manage roles and the permissions they grant.</p>
         </div>
 
-        @can('create', \Spatie\Permission\Models\Role::class)
+        @can('create', \App\Models\Permission\Role::class)
             <a href="{{ route('admin.roles.create') }}">
                 <x-ui.button>Add Role</x-ui.button>
             </a>

@@ -2,13 +2,32 @@
 
 namespace Database\Seeders;
 
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
+    /**
+     * Permissions for actions that have no dedicated route - see
+     * app/Console/Commands/SyncPermissionsFromRoutes.php, which discovers
+     * permissions from named "admin.*" routes and has no way to see a
+     * Livewire component method such as an index page's delete button or a
+     * settings form's save action. Named in the same admin.<module>.
+     * <section> shape the sync command produces, using its resource-style
+     * section vocabulary, so Permission::IMPLYING_SECTIONS/IMPLIED_SECTIONS
+     * treats these the same as a route-backed permission.
+     *
+     * @var array<string, array{module: string, section: string}>
+     */
+    protected array $manualPermissions = [
+        'admin.users.destroy' => ['module' => 'users', 'section' => 'destroy'],
+        'admin.roles.destroy' => ['module' => 'roles', 'section' => 'destroy'],
+        'admin.settings.update' => ['module' => 'settings', 'section' => 'update'],
+    ];
+
     /**
      * Permissions granted to the "Admin" role in addition to "Super Admin",
      * which bypasses all authorization checks (see AppServiceProvider).
@@ -16,32 +35,13 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<int, string>
      */
     protected array $adminPermissions = [
-        'users.view',
-        'users.create',
-        'users.update',
-        'users.delete',
-        'activity-log.view',
-        'settings.view',
-        'settings.update',
-    ];
-
-    /**
-     * Every permission the common modules understand out of the box.
-     *
-     * @var array<int, string>
-     */
-    protected array $allPermissions = [
-        'users.view',
-        'users.create',
-        'users.update',
-        'users.delete',
-        'roles.view',
-        'roles.create',
-        'roles.update',
-        'roles.delete',
-        'activity-log.view',
-        'settings.view',
-        'settings.update',
+        'admin.users.index',
+        'admin.users.create',
+        'admin.users.edit',
+        'admin.users.destroy',
+        'admin.activity-log.index',
+        'admin.settings.edit',
+        'admin.settings.update',
     ];
 
     /**
@@ -49,16 +49,30 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ($this->allPermissions as $permission) {
-            Permission::findOrCreate($permission);
+        // Discovers a permission for every named "admin.*" route - index/
+        // create/edit for each module currently built.
+        Artisan::call('permissions:sync');
+
+        foreach ($this->manualPermissions as $name => $meta) {
+            Permission::updateOrCreate(
+                ['name' => $name, 'guard_name' => 'web'],
+                [
+                    'module' => $meta['module'],
+                    'section' => $meta['section'],
+                    'description' => str($meta['module'])->headline().' - '.str($meta['section'])->headline(),
+                ]
+            );
         }
 
-        // findOrCreate() writes straight to the database without refreshing the
-        // registrar's in-memory permission cache, so the newly created rows
-        // above are invisible to syncPermissions() below until we clear it.
+        // updateOrCreate() writes straight to the database without
+        // refreshing the registrar's in-memory permission cache, so the
+        // rows created above are invisible to syncPermissions() below
+        // until we clear it.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        Role::findOrCreate('Super Admin')->syncPermissions($this->allPermissions);
+        $everyPermission = Permission::query()->pluck('name')->all();
+
+        Role::findOrCreate('Super Admin')->syncPermissions($everyPermission);
         Role::findOrCreate('Admin')->syncPermissions($this->adminPermissions);
     }
 }

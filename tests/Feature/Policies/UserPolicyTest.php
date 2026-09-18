@@ -1,29 +1,29 @@
 <?php
 
+use App\Models\Permission\Permission;
+use App\Models\Permission\Role;
 use App\Models\User;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
-it('allows viewing users with the users.view permission', function () {
-    Permission::findOrCreate('users.view');
+it('allows viewing users with the admin.users.index permission', function () {
+    Permission::findOrCreate('admin.users.index');
     $user = User::factory()->create();
-    $user->givePermissionTo('users.view');
+    $user->givePermissionTo('admin.users.index');
 
     expect($user->can('viewAny', User::class))->toBeTrue();
 });
 
-it('denies viewing users without the users.view permission', function () {
+it('denies viewing users without the admin.users.index permission', function () {
     $user = User::factory()->create();
 
     expect($user->can('viewAny', User::class))->toBeFalse();
 });
 
 it('denies editing a Super Admin unless the actor is also a Super Admin', function () {
-    Permission::findOrCreate('users.update');
+    Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('Super Admin');
@@ -43,11 +43,11 @@ it('allows a Super Admin to edit another Super Admin', function () {
     expect($actor->can('update', $superAdmin))->toBeTrue();
 });
 
-it('allows editing a regular user with the users.update permission', function () {
-    Permission::findOrCreate('users.update');
+it('allows editing a regular user with the admin.users.edit permission', function () {
+    Permission::findOrCreate('admin.users.edit');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.update');
+    $actor->givePermissionTo('admin.users.edit');
 
     $target = User::factory()->create();
 
@@ -55,20 +55,20 @@ it('allows editing a regular user with the users.update permission', function ()
 });
 
 it('denies deleting your own account', function () {
-    Permission::findOrCreate('users.delete');
+    Permission::findOrCreate('admin.users.destroy');
 
     $user = User::factory()->create();
-    $user->givePermissionTo('users.delete');
+    $user->givePermissionTo('admin.users.destroy');
 
     expect($user->can('delete', $user))->toBeFalse();
 });
 
 it('denies deleting a Super Admin unless the actor is also a Super Admin', function () {
-    Permission::findOrCreate('users.delete');
+    Permission::findOrCreate('admin.users.destroy');
     Role::findOrCreate('Super Admin');
 
     $actor = User::factory()->create();
-    $actor->givePermissionTo('users.delete');
+    $actor->givePermissionTo('admin.users.destroy');
 
     $superAdmin = User::factory()->create();
     $superAdmin->assignRole('Super Admin');
