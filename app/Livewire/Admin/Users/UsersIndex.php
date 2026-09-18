@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Users;
 
 use App\Models\Permission\Role;
 use App\Models\User;
+use App\Services\User\UserService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -11,12 +12,9 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 class UsersIndex extends Component
 {
-    use WithPagination;
-
     #[Url]
     public string $search = '';
 
@@ -29,33 +27,40 @@ class UsersIndex extends Component
     /** @var array<int, int> */
     public array $selected = [];
 
+    public int $perPage = 10;
+
     public function updatingSearch(): void
     {
-        $this->resetPage();
+        $this->perPage = 10;
     }
 
     public function updatingRole(): void
     {
-        $this->resetPage();
+        $this->perPage = 10;
     }
 
     public function updatingStatus(): void
     {
-        $this->resetPage();
+        $this->perPage = 10;
+    }
+
+    public function loadMore(): void
+    {
+        $this->perPage += 10;
     }
 
     public function toggleActive(User $user): void
     {
         Gate::authorize('update', $user);
 
-        $user->update(['is_active' => ! $user->is_active]);
+        app(UserService::class)->updateUser($user, ['is_active' => ! $user->is_active]);
     }
 
     public function delete(User $user): void
     {
         Gate::authorize('delete', $user);
 
-        $user->delete();
+        app(UserService::class)->deleteUser($user);
 
         $this->selected = array_values(array_diff($this->selected, [$user->id]));
     }
@@ -89,24 +94,14 @@ class UsersIndex extends Component
 
     public function bulkActivate(): void
     {
-        $this->bulkSetActive(true);
+        app(UserService::class)->bulkActivate($this->selected);
+
+        $this->selected = [];
     }
 
     public function bulkDeactivate(): void
     {
-        $this->bulkSetActive(false);
-    }
-
-    protected function bulkSetActive(bool $active): void
-    {
-        User::query()
-            ->whereKey($this->selected)
-            ->get()
-            ->each(function (User $user) use ($active) {
-                if (Gate::allows('update', $user)) {
-                    $user->update(['is_active' => $active]);
-                }
-            });
+        app(UserService::class)->bulkDeactivate($this->selected);
 
         $this->selected = [];
     }
@@ -132,17 +127,17 @@ class UsersIndex extends Component
      */
     protected function users(): LengthAwarePaginator
     {
-        return User::query()
-            ->with('roles')
-            ->when($this->search, fn ($query) => $query->where(
-                fn ($q) => $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('email', 'like', "%{$this->search}%")
-            ))
-            ->when($this->role, fn ($query) => $query->whereHas(
-                'roles', fn ($q) => $q->where('name', $this->role)
-            ))
-            ->when($this->status !== '', fn ($query) => $query->where('is_active', $this->status === 'active'))
-            ->orderBy('name')
-            ->paginate(10);
+        return app(UserService::class)->paginate(
+            search: $this->search,
+            perPage: $this->perPage,
+            // Reproduces the previous fixed `orderBy('name')` through the
+            // shared applySort() helper rather than adding a new sort
+            // control to the UI.
+            sort: 'name_asc',
+            filters: [
+                'role' => $this->role,
+                'is_active' => $this->status === '' ? null : $this->status === 'active',
+            ],
+        );
     }
 }

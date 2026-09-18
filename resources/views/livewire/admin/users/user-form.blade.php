@@ -40,10 +40,11 @@
                 </div>
             </div>
 
-            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <x-forms.checkbox wire:model="is_active" />
-                Active
-            </label>
+            <x-forms.toggle wire:model="is_active" label="Active" :disabled="$userId === auth()->id()" />
+            @if ($userId === auth()->id())
+                <p class="mt-1 text-xs text-gray-400">You cannot deactivate your own account.</p>
+            @endif
+            <x-forms.error for="is_active" />
         </x-ui.card>
 
         <x-ui.card title="Roles">

@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="hidden overflow-x-auto md:block">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
                     <tr>
@@ -48,7 +48,14 @@
                                         <a href="{{ route('admin.roles.edit', $role) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
                                     @endcan
                                     @can('delete', $role)
-                                        <button type="button" wire:click="delete({{ $role->id }})" data-confirm="delete" class="font-medium text-red-600 hover:underline dark:text-red-400">
+                                        <button
+                                            type="button"
+                                            wire:click="delete({{ $role->id }})"
+                                            data-confirm="delete"
+                                            data-confirm-entity="Role"
+                                            data-confirm-name="{{ $role->name }}"
+                                            class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                        >
                                             Delete
                                         </button>
                                     @endcan
@@ -66,8 +73,44 @@
             </table>
         </div>
 
-        <div class="border-t border-gray-100 p-4 dark:border-white/10">
-            {{ $roles->links() }}
+        <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
+            @forelse ($roles as $role)
+                <div wire:key="role-mobile-{{ $role->id }}" class="p-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</p>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $role->permissions_count }} {{ Str::plural('permission', $role->permissions_count) }}</span>
+                    </div>
+
+                    <a
+                        href="{{ route('admin.users.index', ['role' => $role->name]) }}"
+                        class="mt-1 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                        {{ $role->users_count }} {{ Str::plural('user', $role->users_count) }}
+                    </a>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                        @can('update', $role)
+                            <a href="{{ route('admin.roles.edit', $role) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
+                        @endcan
+                        @can('delete', $role)
+                            <button
+                                type="button"
+                                wire:click="delete({{ $role->id }})"
+                                data-confirm="delete"
+                                data-confirm-entity="Role"
+                                data-confirm-name="{{ $role->name }}"
+                                class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                            >
+                                Delete
+                            </button>
+                        @endcan
+                    </div>
+                </div>
+            @empty
+                <p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No roles found.</p>
+            @endforelse
         </div>
+
+        <x-ui.load-more :paginator="$roles" />
     </x-ui.card>
 </div>

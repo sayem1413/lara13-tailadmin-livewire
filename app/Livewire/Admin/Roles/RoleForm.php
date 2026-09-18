@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Roles;
 
 use App\Models\Permission\Permission;
 use App\Models\Permission\Role;
+use App\Services\Role\RoleService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -50,19 +51,22 @@ class RoleForm extends Component
 
     public function save(): void
     {
-        $role = $this->roleId ? Role::findOrFail($this->roleId) : new Role(['guard_name' => 'web']);
+        $role = $this->roleId ? Role::findOrFail($this->roleId) : null;
 
-        if ($this->roleId) {
-            $this->guardAgainstSuperAdminRole($role);
-        }
-
-        Gate::authorize($this->roleId ? 'update' : 'create', $this->roleId ? $role : Role::class);
+        Gate::authorize($this->roleId ? 'update' : 'create', $role ?? Role::class);
 
         $validated = $this->validate();
 
-        $role->name = $validated['name'];
-        $role->save();
-        $role->syncPermissions($this->expandSelectedPermissions($validated['selectedPermissions']));
+        $data = [
+            'name' => $validated['name'],
+            'permissions' => $validated['selectedPermissions'],
+        ];
+
+        if ($role) {
+            app(RoleService::class)->updateRole($role, $data);
+        } else {
+            app(RoleService::class)->createRole($data);
+        }
 
         session()->flash('success', $this->roleId ? 'Role updated.' : 'Role created.');
 
@@ -77,7 +81,7 @@ class RoleForm extends Component
      */
     public function updatedSelectedPermissions(): void
     {
-        $this->selectedPermissions = $this->expandSelectedPermissions($this->selectedPermissions);
+        $this->selectedPermissions = app(RoleService::class)->expandPermissions($this->selectedPermissions);
     }
 
     /**
@@ -94,7 +98,7 @@ class RoleForm extends Component
             ? array_values(array_diff($this->selectedPermissions, $namesInGroup))
             : array_values(array_unique([...$this->selectedPermissions, ...$namesInGroup]));
 
-        $this->selectedPermissions = $this->expandSelectedPermissions($this->selectedPermissions);
+        $this->selectedPermissions = app(RoleService::class)->expandPermissions($this->selectedPermissions);
     }
 
     /**
@@ -108,29 +112,6 @@ class RoleForm extends Component
         $allSelected = empty(array_diff($allNames, $this->selectedPermissions));
 
         $this->selectedPermissions = $allSelected ? [] : $allNames;
-    }
-
-    /**
-     * The given permission names, plus any module-level view permissions
-     * they imply. Re-applied on save (not just on the live update above) so
-     * a direct/tampered request can't submit a write permission without its
-     * implied view permission.
-     *
-     * @param  array<int, string>  $names
-     * @return array<int, string>
-     */
-    protected function expandSelectedPermissions(array $names): array
-    {
-        if ($names === []) {
-            return $names;
-        }
-
-        $ids = Permission::query()->whereIn('name', $names)->pluck('id')->all();
-
-        return Permission::query()
-            ->whereIn('id', Permission::expandWithImplied($ids))
-            ->pluck('name')
-            ->all();
     }
 
     /**

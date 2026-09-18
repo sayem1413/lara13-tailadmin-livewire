@@ -18,6 +18,6 @@
     </div>
 @else
     <select
-        {{ $attributes->merge(['class' => "block w-full rounded-lg border px-4 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-3 {$borderClasses}"]) }}
+        {{ $attributes->merge(['class' => "form-select block w-full rounded-lg border px-4 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-3 {$borderClasses}"]) }}
     >{{ $slot }}</select>
 @endif

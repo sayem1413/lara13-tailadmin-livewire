@@ -48,20 +48,21 @@ Route::middleware(['auth', 'active'])->name('admin.')->group(function () {
     |
     */
 
-    Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::get('/{user}/edit', 'edit')->name('edit');
-    });
+    // Full resource controllers (not just the index/create/edit pages the
+    // Livewire components need) so the same Service/Repository layer for
+    // each module is ready to back a v2 build for another platform later,
+    // without the UI here needing to change.
+    Route::resource('users', UserController::class)->only([
+        'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
+    ]);
 
-    Route::prefix('roles')->name('roles.')->controller(RoleController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::get('/{role}/edit', 'edit')->name('edit');
-    });
+    Route::resource('roles', RoleController::class)->only([
+        'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
+    ]);
 
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
 
     Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 
 });

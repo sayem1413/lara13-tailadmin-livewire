@@ -102,6 +102,20 @@ it('updates the password when one is provided', function () {
     expect(Hash::check('brand-new-password', $target->fresh()->password))->toBeTrue();
 });
 
+it('prevents a user from deactivating their own account, even via a tampered request', function () {
+    Permission::findOrCreate('admin.users.edit');
+    $actor = User::factory()->create(['is_active' => true]);
+    $actor->givePermissionTo('admin.users.edit');
+
+    Livewire::actingAs($actor)
+        ->test(UserForm::class, ['user' => $actor])
+        ->set('is_active', false)
+        ->call('save')
+        ->assertHasErrors('is_active');
+
+    expect($actor->fresh()->is_active)->toBeTrue();
+});
+
 it('forbids opening the edit form for a Super Admin unless the actor is also a Super Admin', function () {
     Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');

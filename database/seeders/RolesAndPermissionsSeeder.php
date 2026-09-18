@@ -23,9 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<string, array{module: string, section: string}>
      */
     protected array $manualPermissions = [
-        'admin.users.destroy' => ['module' => 'users', 'section' => 'destroy'],
-        'admin.roles.destroy' => ['module' => 'roles', 'section' => 'destroy'],
-        'admin.settings.update' => ['module' => 'settings', 'section' => 'update'],
+        //
     ];
 
     /**

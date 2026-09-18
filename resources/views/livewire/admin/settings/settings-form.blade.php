@@ -11,10 +11,7 @@
                     @foreach ($group['fields'] as $key => $field)
                         <div>
                             @if ($field['type'] === 'boolean')
-                                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                    <x-forms.checkbox wire:model="values.{{ $key }}" />
-                                    {{ $field['label'] }}
-                                </label>
+                                <x-forms.toggle wire:model="values.{{ $key }}" :label="$field['label']" />
                             @else
                                 <x-forms.label for="{{ $key }}">{{ $field['label'] }}</x-forms.label>
 

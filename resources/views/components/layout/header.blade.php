@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-gray-200 bg-white px-4 sm:px-6 dark:border-white/10 dark:bg-gray-900">
+<header class="relative sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-4 sm:gap-4 sm:px-6 dark:border-white/10 dark:bg-gray-900" x-data="{ mobileSearchOpen: false }">
     <button
         type="button"
         @click="sidebarOpen = !sidebarOpen"
@@ -7,6 +7,31 @@
         <x-ui.icon name="menu" />
         <span class="sr-only">Toggle sidebar</span>
     </button>
+
+    <button
+        type="button"
+        @click="mobileSearchOpen = true"
+        class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 sm:hidden dark:text-gray-400 dark:hover:bg-white/5"
+    >
+        <x-ui.icon name="search" class="size-5" />
+        <span class="sr-only">Search</span>
+    </button>
+
+    <div
+        x-show="mobileSearchOpen"
+        x-cloak
+        x-transition
+        @keydown.escape.window="mobileSearchOpen = false"
+        class="absolute inset-x-0 top-0 z-10 flex h-16 items-center gap-2 bg-white px-4 sm:hidden dark:bg-gray-900"
+    >
+        <div class="min-w-0 flex-1">
+            <livewire:layout.global-search />
+        </div>
+        <button type="button" @click="mobileSearchOpen = false" class="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+            <x-ui.icon name="x-mark" class="size-5" />
+            <span class="sr-only">Close search</span>
+        </button>
+    </div>
 
     <div class="flex flex-1 items-center justify-end gap-3 sm:justify-between">
         <div class="hidden max-w-md flex-1 sm:block">
@@ -26,8 +51,8 @@
 
             <livewire:layout.notifications-dropdown />
 
-            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                <button type="button" @click="open = !open" class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-white/5">
+            <div class="relative" x-data="floatingMenu()" @click.outside="close()">
+                <button x-ref="trigger" type="button" @click="toggle()" class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-white/5">
                     @if (auth()->user()->avatarUrl())
                         <img src="{{ auth()->user()->avatarUrl() }}" alt="{{ auth()->user()->name }}" class="size-8 rounded-full object-cover" />
                     @else
@@ -40,10 +65,11 @@
                 </button>
 
                 <div
+                    x-ref="panel"
                     x-show="open"
                     x-cloak
                     x-transition
-                    class="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-white/10 dark:bg-gray-800"
+                    class="z-40 w-[min(14rem,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-white/10 dark:bg-gray-800"
                 >
                     <div class="border-b border-gray-100 px-4 py-2 dark:border-white/10">
                         <p class="truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ auth()->user()->name }}</p>

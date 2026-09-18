@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Users;
 
 use App\Models\Permission\Role;
 use App\Models\User;
+use App\Services\User\UserService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -64,28 +65,29 @@ class UserForm extends Component
 
     public function save(): void
     {
-        $user = $this->userId ? User::findOrFail($this->userId) : new User;
+        $user = $this->userId ? User::findOrFail($this->userId) : null;
 
-        Gate::authorize($this->userId ? 'update' : 'create', $this->userId ? $user : User::class);
+        Gate::authorize($this->userId ? 'update' : 'create', $user ?? User::class);
 
         $validated = $this->validate();
 
-        $user->fill([
+        $data = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'is_active' => $validated['is_active'],
-        ]);
+            'password' => $validated['password'] ?? null,
+            // Filter against assignableRoles() rather than trusting the
+            // submitted array outright: a tampered request could include
+            // "Super Admin" even though the rendered checkboxes never
+            // offer it.
+            'roles' => collect($this->selectedRoles)->intersect($this->assignableRoles())->all(),
+        ];
 
-        if (! empty($validated['password'])) {
-            $user->password = $validated['password'];
+        if ($user) {
+            app(UserService::class)->updateUser($user, $data);
+        } else {
+            app(UserService::class)->createUser($data);
         }
-
-        $user->save();
-
-        // Filter against assignableRoles() rather than trusting the submitted
-        // array outright: a tampered request could include "Super Admin"
-        // even though the rendered checkboxes never offer it.
-        $user->syncRoles(collect($this->selectedRoles)->intersect($this->assignableRoles())->all());
 
         session()->flash('success', $this->userId ? 'User updated.' : 'User created.');
 

@@ -26,86 +26,109 @@
     [x-cloak] {
         display: none !important;
     }
+
+    /*
+     * A browser's default text-selection highlight is a translucent blue,
+     * which collides with this app's own brand-blue badges and links -
+     * selecting "Super Admin" (badge text) or "Edit" (a link) leaves
+     * near-illegible blue-on-blue in light mode, and low-contrast text in
+     * dark mode. An opaque background with an explicit text color reads
+     * clearly regardless of the original text/background color underneath.
+     */
+    ::selection {
+        background-color: var(--color-brand-500);
+        color: #fff;
+    }
+
+    /*
+     * Without this, native form controls (a plain <select>'s option list,
+     * checkboxes, scrollbars, date inputs) render using the OS's own
+     * light/dark preference, independent of the .dark class our own
+     * toggle applies - so a user whose OS is in dark mode could get a
+     * light-themed page with a dark native dropdown popup (or vice versa),
+     * with text and background colors that don't match.
+     */
+    :root {
+        color-scheme: light;
+    }
+
+    :root.dark {
+        color-scheme: dark;
+    }
 }
 
 /*
- * Choices.js ships its own default theme with fixed class names it
- * generates itself (not controllable from Blade), so it's restyled here
- * with plain CSS to match the app's input styling instead of Tailwind
- * utility classes.
+ * A plain <select> (see components/forms/select.blade.php) otherwise falls
+ * back to the browser's own native dropdown arrow, which looks out of
+ * place next to every other icon in this app being a custom SVG - this
+ * reuses the same chevron-down path as x-ui.icon so the arrow matches.
+ */
+@layer components {
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem;
+        padding-right: 2.5rem;
+    }
+}
+
+/*
+ * Choices.js themes almost entirely through its own CSS custom properties
+ * (see node_modules/choices.js/public/assets/styles/choices.css), so
+ * setting those - rather than overriding its classes directly - is what
+ * actually wins regardless of the specificity of its own rules (e.g. its
+ * select-multiple/text variant selectors are more specific than a bare
+ * .choices__inner override).
  */
 @layer components {
     .choices {
-        margin-bottom: 0;
-    }
-
-    .choices__inner {
-        display: block;
-        min-height: 0;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5dc;
-        background-color: #fff;
-        padding: 0.4rem 1rem;
-        font-size: 0.875rem;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    }
-
-    .choices.is-focused .choices__inner,
-    .choices.is-open .choices__inner {
-        border-color: var(--color-brand-500);
-        box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand-500) 10%, transparent);
-    }
-
-    .choices__list--dropdown,
-    .choices__list[aria-expanded] {
-        border-radius: 0.5rem;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
-
-    .choices__list--dropdown .choices__item--selectable.is-highlighted {
-        background-color: var(--color-brand-50);
-        color: var(--color-brand-700);
+        --choices-guttering: 0;
+        --choices-border-radius: 0.5rem;
+        --choices-border-radius-item: 9999px;
+        --choices-bg-color: #fff;
+        --choices-bg-color-dropdown: #fff;
+        --choices-keyline-color: #d1d5dc;
+        --choices-text-color: #1e2939;
+        --choices-primary-color: var(--color-brand-50);
+        --choices-highlight-color: var(--color-brand-500);
+        /*
+         * Choices' own stylesheet uses this as the BACKGROUND of a
+         * highlighted/selected dropdown item (.is-highlighted), not a text
+         * color, despite the name reading like one - it was previously set
+         * to the same dark blue used below for the highlighted item's
+         * *text* color, making the text exactly the same color as its own
+         * background (invisible) whenever an option was hovered or
+         * keyboard-navigated.
+         */
+        --choices-highlighted-color: var(--color-brand-50);
+        --choices-input-height: 2.625rem;
+        --choices-font-size-md: 0.875rem;
     }
 
     .choices__list--multiple .choices__item {
-        border-radius: 9999px;
-        border: none;
-        background-color: var(--color-brand-50);
         color: var(--color-brand-700);
-        padding: 0.2rem 0.75rem;
-        font-size: 0.75rem;
     }
 
-    .choices__list--multiple .choices__item .choices__button {
-        border-left-color: color-mix(in oklab, var(--color-brand-700) 30%, transparent);
+    .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        color: var(--color-brand-700);
     }
 
-    .dark .choices__inner {
-        border-color: rgb(255 255 255 / 0.1);
-        background-color: rgb(255 255 255 / 0.05);
-        color: rgb(255 255 255 / 0.9);
-    }
-
-    .dark .choices__list--dropdown,
-    .dark .choices__list[aria-expanded] {
-        border-color: rgb(255 255 255 / 0.1);
-        background-color: #1e2635;
-        color: rgb(255 255 255 / 0.9);
-    }
-
-    .dark .choices__list--dropdown .choices__item--selectable.is-highlighted {
-        background-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
-        color: var(--color-brand-400);
-    }
-
-    .dark .choices__input {
-        background-color: transparent;
-        color: rgb(255 255 255 / 0.9);
+    .dark .choices {
+        --choices-bg-color: rgb(255 255 255 / 0.05);
+        --choices-bg-color-dropdown: #1e2635;
+        --choices-keyline-color: rgb(255 255 255 / 0.1);
+        --choices-text-color: rgb(255 255 255 / 0.9);
+        --choices-primary-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
+        --choices-highlighted-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
     }
 
     .dark .choices__list--multiple .choices__item {
-        background-color: color-mix(in oklab, var(--color-brand-500) 15%, transparent);
+        color: var(--color-brand-400);
+    }
+
+    .dark .choices__list--dropdown .choices__item--selectable.is-highlighted {
         color: var(--color-brand-400);
     }
 }

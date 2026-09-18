@@ -38,20 +38,32 @@
             @if (! empty($selected))
                 <div class="ml-auto flex items-center gap-2">
                     <span class="text-sm text-gray-500 dark:text-gray-400">{{ count($selected) }} selected</span>
-                    <x-ui.button variant="secondary" wire:click="bulkActivate">Activate</x-ui.button>
-                    <x-ui.button variant="secondary" wire:click="bulkDeactivate">Deactivate</x-ui.button>
+                    <x-ui.button
+                        variant="secondary"
+                        wire:click="bulkActivate"
+                        data-confirm="bulk-activate"
+                        data-confirm-entity-plural="users"
+                        data-confirm-count="{{ count($selected) }}"
+                    >Activate</x-ui.button>
+                    <x-ui.button
+                        variant="secondary"
+                        wire:click="bulkDeactivate"
+                        data-confirm="bulk-deactivate"
+                        data-confirm-entity-plural="users"
+                        data-confirm-count="{{ count($selected) }}"
+                    >Deactivate</x-ui.button>
                 </div>
             @endif
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="hidden overflow-x-auto md:block">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
                     <tr>
                         <th class="w-10 px-4 py-3">
                             <x-forms.checkbox
                                 wire:click="toggleSelectAllOnPage"
-                                @checked($this->allOnPageSelected($users->pluck('id')->all()))
+                                :checked="$this->allOnPageSelected($users->pluck('id')->all())"
                             />
                         </th>
                         <th class="px-4 py-3 font-medium">Name</th>
@@ -89,13 +101,22 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-3 text-sm">
                                     @can('update', $user)
-                                        <button type="button" wire:click="toggleActive({{ $user->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
-                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
-                                        </button>
+                                        @if ($user->id !== auth()->id())
+                                            <button type="button" wire:click="toggleActive({{ $user->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                                                {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                            </button>
+                                        @endif
                                         <a href="{{ route('admin.users.edit', $user) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
                                     @endcan
                                     @can('delete', $user)
-                                        <button type="button" wire:click="delete({{ $user->id }})" data-confirm="delete" class="font-medium text-red-600 hover:underline dark:text-red-400">
+                                        <button
+                                            type="button"
+                                            wire:click="delete({{ $user->id }})"
+                                            data-confirm="delete"
+                                            data-confirm-entity="User"
+                                            data-confirm-name="{{ $user->name }}"
+                                            class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                        >
                                             Delete
                                         </button>
                                     @endcan
@@ -113,8 +134,61 @@
             </table>
         </div>
 
-        <div class="border-t border-gray-100 p-4 dark:border-white/10">
-            {{ $users->links() }}
+        <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
+            @forelse ($users as $user)
+                <div wire:key="user-mobile-{{ $user->id }}" class="flex gap-3 p-4">
+                    <x-forms.checkbox class="mt-1" wire:model.live="selected" value="{{ $user->id }}" />
+
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="truncate font-medium text-gray-800 dark:text-white/90">{{ $user->name }}</p>
+                                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $user->email }}</p>
+                            </div>
+                            @if ($user->is_active)
+                                <x-ui.badge color="green">Active</x-ui.badge>
+                            @else
+                                <x-ui.badge color="red">Inactive</x-ui.badge>
+                            @endif
+                        </div>
+
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            @forelse ($user->roles as $userRole)
+                                <x-ui.badge color="brand">{{ $userRole->name }}</x-ui.badge>
+                            @empty
+                                <span class="text-xs text-gray-400">No roles</span>
+                            @endforelse
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                            @can('update', $user)
+                                @if ($user->id !== auth()->id())
+                                    <button type="button" wire:click="toggleActive({{ $user->id }})" class="min-h-11 font-medium text-gray-600 dark:text-gray-300">
+                                        {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                    </button>
+                                @endif
+                                <a href="{{ route('admin.users.edit', $user) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
+                            @endcan
+                            @can('delete', $user)
+                                <button
+                                    type="button"
+                                    wire:click="delete({{ $user->id }})"
+                                    data-confirm="delete"
+                                    data-confirm-entity="User"
+                                    data-confirm-name="{{ $user->name }}"
+                                    class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                                >
+                                    Delete
+                                </button>
+                            @endcan
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No users found.</p>
+            @endforelse
         </div>
+
+        <x-ui.load-more :paginator="$users" />
     </x-ui.card>
 </div>

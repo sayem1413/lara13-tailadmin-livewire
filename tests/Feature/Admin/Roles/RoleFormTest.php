@@ -133,6 +133,31 @@ it('checks every permission at once via the global toggle, then unchecks them al
     expect($component->get('selectedPermissions'))->toBe([]);
 });
 
+it('renders the global and per-module select-all checkboxes as checked once everything in scope is selected', function () {
+    Artisan::call('permissions:sync');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    $everyPermission = Permission::query()->pluck('name')->all();
+
+    // Ordered the same way RoleForm::permissionGroups() orders them, since
+    // this is compared against the exact wire:click argument list rendered
+    // in the view - a different array order would be the same permission
+    // set but a different (mis-matching) JSON string.
+    $usersPermissions = Permission::query()->where('module', 'users')->orderBy('section')->pluck('name')->all();
+
+    $component = Livewire::actingAs($actor)->test(RoleForm::class);
+
+    $component->assertDontSeeHtml('wire:click="toggleAllPermissions" checked="checked"');
+
+    $component->set('selectedPermissions', $usersPermissions);
+    $component->assertSeeHtml('wire:click="toggleGroup('.e(json_encode($usersPermissions)).')" checked="checked"');
+
+    $component->set('selectedPermissions', $everyPermission);
+    $component->assertSeeHtml('wire:click="toggleAllPermissions" checked="checked"');
+});
+
 it('forbids opening the edit form for the Super Admin role even for a Super Admin actor', function () {
     Role::findOrCreate('Super Admin');
 

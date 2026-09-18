@@ -3,44 +3,42 @@
 namespace App\Livewire\Admin\Roles;
 
 use App\Models\Permission\Role;
+use App\Services\Role\RoleService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 class RolesIndex extends Component
 {
-    use WithPagination;
-
     #[Url]
     public string $search = '';
 
+    public int $perPage = 10;
+
     public function updatingSearch(): void
     {
-        $this->resetPage();
+        $this->perPage = 10;
+    }
+
+    public function loadMore(): void
+    {
+        $this->perPage += 10;
     }
 
     public function delete(Role $role): void
     {
-        // Bypasses Gate::before too: a Super Admin actor must not be able
-        // to delete the one role every Gate::before check depends on.
-        if ($role->name === 'Super Admin') {
-            $this->dispatch('toast', type: 'error', message: 'The Super Admin role cannot be deleted.');
-
-            return;
-        }
-
         Gate::authorize('delete', $role);
 
-        if ($role->users()->exists()) {
-            $this->dispatch('toast', type: 'error', message: "\"{$role->name}\" is assigned to at least one user and can't be deleted.");
+        try {
+            app(RoleService::class)->deleteRole($role);
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
 
             return;
         }
-
-        $role->delete();
 
         $this->dispatch('toast', type: 'success', message: "\"{$role->name}\" deleted.");
     }
@@ -57,10 +55,10 @@ class RolesIndex extends Component
      */
     protected function roles(): LengthAwarePaginator
     {
-        return Role::query()
-            ->withCount(['permissions', 'users'])
-            ->when($this->search, fn ($query) => $query->where('name', 'like', "%{$this->search}%"))
-            ->orderBy('name')
-            ->paginate(10);
+        return app(RoleService::class)->paginate(
+            search: $this->search,
+            perPage: $this->perPage,
+            sort: 'name_asc',
+        );
     }
 }

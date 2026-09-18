@@ -99,6 +99,16 @@ it("forbids toggling a Super Admin's status without the Super Admin role", funct
     expect($target->fresh()->is_active)->toBeTrue();
 });
 
+it('does not offer to deactivate your own account from the list', function () {
+    Permission::findOrCreate('admin.users.edit');
+    $actor = User::factory()->create(['is_active' => true]);
+    $actor->givePermissionTo('admin.users.edit');
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->assertDontSeeHtml('wire:click="toggleActive('.$actor->id.')"');
+});
+
 it('soft deletes a user', function () {
     Permission::findOrCreate('admin.users.destroy');
     $actor = User::factory()->create();
@@ -112,6 +122,28 @@ it('soft deletes a user', function () {
 
     expect(User::find($target->id))->toBeNull()
         ->and(User::withTrashed()->findOrFail($target->id)->trashed())->toBeTrue();
+});
+
+it('renders the select-all-on-page checkbox as checked once every row on the page is selected', function () {
+    $actor = User::factory()->create();
+    $other = User::factory()->create();
+
+    $component = Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('selected', [$actor->id, $other->id]);
+
+    $component->assertSeeHtml('wire:click="toggleSelectAllOnPage" checked="checked"');
+});
+
+it('does not render the select-all-on-page checkbox as checked while some rows are unselected', function () {
+    $actor = User::factory()->create();
+    User::factory()->create();
+
+    $component = Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('selected', [$actor->id]);
+
+    $component->assertDontSeeHtml('wire:click="toggleSelectAllOnPage" checked="checked"');
 });
 
 it('only activates the users the actor is allowed to update in a bulk action', function () {

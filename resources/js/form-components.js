@@ -80,6 +80,12 @@ export function initFormComponents(Alpine) {
                 searchEnabled: true,
                 itemSelectText: '',
                 removeItemButton: this.$refs.select.multiple,
+                // Choices reads this from the passed element's `.placeholder`
+                // *property*, which only exists on <input>/<textarea> - a
+                // <select>'s `placeholder="..."` attribute (what the Blade
+                // component actually renders) is invisible to it otherwise,
+                // silently dropping the placeholder text entirely.
+                placeholderValue: this.$refs.select.getAttribute('placeholder'),
             });
         },
 

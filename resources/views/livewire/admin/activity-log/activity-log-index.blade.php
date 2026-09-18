@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="hidden overflow-x-auto md:block">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
                     <tr>
@@ -45,9 +45,12 @@
                         <th class="px-4 py-3 font-medium">&nbsp;</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-white/10">
-                    @forelse ($activities as $activity)
-                        <tr wire:key="activity-{{ $activity->id }}" x-data="{ open: false }">
+                @forelse ($activities as $activity)
+                    <tbody
+                        class="divide-y divide-gray-100 dark:divide-white/10"
+                        @if ($activity->properties && $activity->properties->isNotEmpty()) x-data="{ open: false }" @endif
+                    >
+                        <tr wire:key="activity-{{ $activity->id }}">
                             <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
                                 {{ $activity->created_at?->format('Y-m-d H:i') }}
                             </td>
@@ -80,19 +83,54 @@
                                 </td>
                             </tr>
                         @endif
-                    @empty
+                    </tbody>
+                @empty
+                    <tbody>
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No activity recorded yet.
                             </td>
                         </tr>
-                    @endforelse
-                </tbody>
+                    </tbody>
+                @endforelse
             </table>
         </div>
 
-        <div class="border-t border-gray-100 p-4 dark:border-white/10">
-            {{ $activities->links() }}
+        <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
+            @forelse ($activities as $activity)
+                <div
+                    wire:key="activity-mobile-{{ $activity->id }}"
+                    class="p-4"
+                    @if ($activity->properties && $activity->properties->isNotEmpty()) x-data="{ open: false }" @endif
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-sm text-gray-800 dark:text-white/90">{{ $activity->description }}</p>
+                        @if ($activity->event)
+                            <x-ui.badge color="gray">{{ ucfirst($activity->event) }}</x-ui.badge>
+                        @endif
+                    </div>
+
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ $activity->created_at?->format('Y-m-d H:i') }}
+                        &middot; {{ $activity->causer?->name ?? 'System' }}
+                        @if ($activity->subject_type)
+                            &middot; {{ class_basename($activity->subject_type) }}
+                        @endif
+                    </p>
+
+                    @if ($activity->properties && $activity->properties->isNotEmpty())
+                        <button type="button" @click="open = !open" class="mt-2 min-h-11 font-medium text-brand-600 dark:text-brand-400">
+                            <span x-text="open ? 'Hide details' : 'View details'"></span>
+                        </button>
+
+                        <pre x-show="open" x-cloak class="mt-2 overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-600 dark:bg-white/[0.02] dark:text-gray-300">{{ $activity->properties->toJson(JSON_PRETTY_PRINT) }}</pre>
+                    @endif
+                </div>
+            @empty
+                <p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No activity recorded yet.</p>
+            @endforelse
         </div>
+
+        <x-ui.load-more :paginator="$activities" />
     </x-ui.card>
 </div>

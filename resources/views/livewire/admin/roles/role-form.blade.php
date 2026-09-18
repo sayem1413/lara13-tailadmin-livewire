@@ -23,7 +23,7 @@
                 <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <x-forms.checkbox
                         wire:click="toggleAllPermissions"
-                        @checked(! empty($allPermissionNames) && empty(array_diff($allPermissionNames, $selectedPermissions)))
+                        :checked="! empty($allPermissionNames) && empty(array_diff($allPermissionNames, $selectedPermissions))"
                     />
                     Select all
                 </label>
@@ -45,7 +45,7 @@
                                     <label class="flex items-center gap-2 text-sm font-medium text-gray-800 capitalize dark:text-white/90">
                                         <x-forms.checkbox
                                             wire:click="toggleGroup({{ json_encode($namesInGroup) }})"
-                                            @checked(empty(array_diff($namesInGroup, $selectedPermissions)))
+                                            :checked="empty(array_diff($namesInGroup, $selectedPermissions))"
                                         />
                                         {{ str($group)->replace('-', ' ') }}
                                     </label>

@@ -1,20 +1,36 @@
 import Swal from 'sweetalert2';
 
 /**
- * Presets for `data-confirm="<preset>"` triggers. Add project-specific
+ * Presets for `data-confirm="<preset>"` triggers. `{subject}`/`{count}`/
+ * `{entityPlural}` are filled in from the trigger's data-confirm-name,
+ * data-confirm-entity, data-confirm-count, and data-confirm-entity-plural
+ * attributes (see fillTemplate() below) - all optional, so a trigger with
+ * none of them still gets a sensible generic message. Add project-specific
  * presets here rather than hand-rolling SweetAlert2 calls per view.
  */
 const presets = {
     delete: {
-        title: 'Delete this item?',
+        title: 'Delete {subject}?',
         text: 'This action cannot be undone.',
         icon: 'warning',
         confirmButtonText: 'Delete',
         confirmButtonColor: '#d92d20',
     },
     deactivate: {
-        title: 'Deactivate this record?',
+        title: 'Deactivate {subject}?',
         text: 'It will no longer be usable until reactivated.',
+        icon: 'warning',
+        confirmButtonText: 'Deactivate',
+        confirmButtonColor: '#d92d20',
+    },
+    'bulk-activate': {
+        title: 'Activate {count} {entityPlural}?',
+        icon: 'question',
+        confirmButtonText: 'Activate',
+    },
+    'bulk-deactivate': {
+        title: 'Deactivate {count} {entityPlural}?',
+        text: 'They will no longer be usable until reactivated.',
         icon: 'warning',
         confirmButtonText: 'Deactivate',
         confirmButtonColor: '#d92d20',
@@ -31,6 +47,49 @@ const presets = {
         confirmButtonText: 'Confirm',
     },
 };
+
+/**
+ * A human description of what's being acted on, from whichever of
+ * data-confirm-entity/data-confirm-name a trigger provides - "this item"
+ * when it provides neither.
+ */
+function subjectFrom(trigger) {
+    const entity = trigger.dataset.confirmEntity;
+    const name = trigger.dataset.confirmName;
+
+    if (entity && name) {
+        return `${entity} "${name}"`;
+    }
+
+    if (name) {
+        return `"${name}"`;
+    }
+
+    if (entity) {
+        return `this ${entity.toLowerCase()}`;
+    }
+
+    return 'this item';
+}
+
+function fillTemplate(text, trigger) {
+    if (!text) {
+        return text;
+    }
+
+    const count = Number(trigger.dataset.confirmCount ?? 0);
+    const plural = (trigger.dataset.confirmEntityPlural ?? 'items').toLowerCase();
+    // Regular plurals only ("users" -> "user") - the only shape this
+    // starter's own entities need; an irregular one can pass its own
+    // singular via a future data-confirm-entity-singular if that ever
+    // comes up.
+    const entityPlural = count === 1 ? plural.replace(/s$/, '') : plural;
+
+    return text
+        .replace('{subject}', subjectFrom(trigger))
+        .replace('{count}', trigger.dataset.confirmCount ?? '')
+        .replace('{entityPlural}', entityPlural);
+}
 
 /**
  * Wire up a single delegated click listener that intercepts any
@@ -52,6 +111,8 @@ export function initConfirmActions() {
 
         Swal.fire({
             ...preset,
+            title: fillTemplate(preset.title, trigger),
+            text: fillTemplate(preset.text, trigger),
             showCancelButton: true,
             cancelButtonText: 'Cancel',
             reverseButtons: true,

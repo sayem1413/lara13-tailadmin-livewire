@@ -1,5 +1,6 @@
 import { Alpine, Livewire } from '../../vendor/livewire/livewire/dist/livewire.esm';
 import { initConfirmActions } from './confirm-action';
+import { initFloatingMenu } from './floating-menu';
 import { initFormComponents } from './form-components';
 import { showToast } from './toast';
 
@@ -28,6 +29,7 @@ Alpine.data('darkMode', () => ({
 
 initConfirmActions();
 initFormComponents(Alpine);
+initFloatingMenu(Alpine);
 
 // Lets any Livewire component show feedback the same way, without wiring a
 // listener per-component: $this->dispatch('toast', type: 'error', message: '...').

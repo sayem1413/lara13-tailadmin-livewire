@@ -5,6 +5,14 @@ namespace App\Providers;
 use App\Models\Permission\Role;
 use App\Models\User;
 use App\Policies\RolePolicy;
+use App\Repositories\Eloquent\ActivityLog\ActivityLogRepository;
+use App\Repositories\Eloquent\Role\RoleRepository;
+use App\Repositories\Eloquent\Setting\SettingRepository;
+use App\Repositories\Eloquent\User\UserRepository;
+use App\Repositories\Interfaces\ActivityLog\ActivityLogRepositoryInterface;
+use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
+use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
+use App\Repositories\Interfaces\User\UserRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
+        $this->app->bind(SettingRepositoryInterface::class, SettingRepository::class);
+        $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
     }
 
     /**

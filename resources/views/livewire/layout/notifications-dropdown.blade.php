@@ -1,5 +1,5 @@
-<div class="relative" x-data="{ open: false }" @click.outside="open = false">
-    <button type="button" @click="open = !open" class="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+<div class="relative" x-data="floatingMenu()" @click.outside="close()">
+    <button x-ref="trigger" type="button" @click="toggle()" class="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
         <x-ui.icon name="bell" class="size-5" />
         @if ($this->unreadCount > 0)
             <span class="absolute top-1.5 right-1.5 flex size-2 rounded-full bg-red-500"></span>
@@ -8,10 +8,11 @@
     </button>
 
     <div
+        x-ref="panel"
         x-show="open"
         x-cloak
         x-transition
-        class="absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-gray-800"
+        class="z-40 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-gray-800"
     >
         <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-white/10">
             <p class="text-sm font-semibold text-gray-800 dark:text-white/90">Notifications</p>

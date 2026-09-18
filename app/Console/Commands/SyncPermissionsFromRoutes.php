@@ -32,6 +32,17 @@ class SyncPermissionsFromRoutes extends Command
         'admin.dashboard.*',
         'admin.notifications.*',
         'admin.profile.*',
+        // Users'/Roles' resource controllers expose store/show/update as
+        // their own named routes, but the Policy gates them on the same
+        // permission as create/index/edit respectively - a separate
+        // permission for each would just be an orphan toggle in the Role
+        // editor that controls nothing.
+        'admin.users.store',
+        'admin.users.show',
+        'admin.users.update',
+        'admin.roles.store',
+        'admin.roles.show',
+        'admin.roles.update',
     ];
 
     /**

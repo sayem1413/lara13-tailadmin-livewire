@@ -16,7 +16,7 @@ class SettingsForm extends Component
     {
         Gate::authorize('admin.settings.edit');
 
-        foreach ($this->schema() as $group) {
+        foreach ($settings->schema() as $group) {
             foreach ($group['fields'] as $key => $field) {
                 $this->values[$key] = $settings->get($key, $field['default'] ?? null);
             }
@@ -28,19 +28,7 @@ class SettingsForm extends Component
      */
     protected function rules(): array
     {
-        $rules = [];
-
-        foreach ($this->schema() as $group) {
-            foreach ($group['fields'] as $key => $field) {
-                $rules["values.{$key}"] = match ($field['type']) {
-                    'boolean' => ['boolean'],
-                    'select' => ['nullable', 'string', 'in:'.implode(',', array_keys($field['options'] ?? []))],
-                    default => ['nullable', 'string', 'max:2000'],
-                };
-            }
-        }
-
-        return $rules;
+        return app(SettingService::class)->validationRules();
     }
 
     public function save(SettingService $settings): void
@@ -58,21 +46,10 @@ class SettingsForm extends Component
         $this->dispatch('toast', type: 'success', message: 'Settings updated.');
     }
 
-    /**
-     * @return array<string, array{label: string, fields: array<string, array<string, mixed>>}>
-     */
-    protected function schema(): array
-    {
-        /** @var array<string, array{label: string, fields: array<string, array<string, mixed>>}> $schema */
-        $schema = config('settings', []);
-
-        return $schema;
-    }
-
-    public function render(): View
+    public function render(SettingService $settings): View
     {
         return view('livewire.admin.settings.settings-form', [
-            'schema' => $this->schema(),
+            'schema' => $settings->schema(),
         ]);
     }
 }

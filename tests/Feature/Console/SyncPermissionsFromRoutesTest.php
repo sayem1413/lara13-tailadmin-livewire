@@ -29,6 +29,19 @@ it('does not create a permission for an ignored admin route', function () {
         ->and(Permission::query()->where('name', 'admin.profile.password')->exists())->toBeFalse();
 });
 
+it('creates a single destroy permission per resource controller instead of one per store/show/update route', function () {
+    $this->artisan('permissions:sync');
+
+    expect(Permission::query()->where('name', 'admin.users.destroy')->exists())->toBeTrue()
+        ->and(Permission::query()->where('name', 'admin.users.store')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.users.show')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.users.update')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.roles.destroy')->exists())->toBeTrue()
+        ->and(Permission::query()->where('name', 'admin.roles.store')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.roles.show')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.roles.update')->exists())->toBeFalse();
+});
+
 it('records the module and section derived from the route name', function () {
     $this->artisan('permissions:sync');
 

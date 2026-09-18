@@ -2,8 +2,7 @@
 
 namespace App\Livewire\Admin\ActivityLog;
 
-use App\Models\User;
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use App\Services\ActivityLog\ActivityLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -11,13 +10,10 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogIndex extends Component
 {
-    use WithPagination;
-
     #[Url]
     public string $search = '';
 
@@ -34,9 +30,36 @@ class ActivityLogIndex extends Component
     #[Url]
     public string $dateRange = '';
 
+    public int $perPage = 15;
+
     public function mount(): void
     {
         Gate::authorize('admin.activity-log.index');
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->perPage = 15;
+    }
+
+    public function updatingEvent(): void
+    {
+        $this->perPage = 15;
+    }
+
+    public function updatingSubjectType(): void
+    {
+        $this->perPage = 15;
+    }
+
+    public function updatingDateRange(): void
+    {
+        $this->perPage = 15;
+    }
+
+    public function loadMore(): void
+    {
+        $this->perPage += 15;
     }
 
     /**
@@ -45,11 +68,7 @@ class ActivityLogIndex extends Component
     #[Computed]
     public function eventOptions(): Collection
     {
-        return Activity::query()
-            ->whereNotNull('event')
-            ->distinct()
-            ->orderBy('event')
-            ->pluck('event');
+        return app(ActivityLogService::class)->eventOptions();
     }
 
     /**
@@ -58,12 +77,7 @@ class ActivityLogIndex extends Component
     #[Computed]
     public function subjectTypeOptions(): Collection
     {
-        return Activity::query()
-            ->whereNotNull('subject_type')
-            ->distinct()
-            ->pluck('subject_type')
-            ->mapWithKeys(fn (string $type) => [$type => class_basename($type)])
-            ->sort();
+        return app(ActivityLogService::class)->subjectTypeOptions();
     }
 
     /**
@@ -71,26 +85,15 @@ class ActivityLogIndex extends Component
      */
     protected function activities(): LengthAwarePaginator
     {
-        return Activity::query()
-            ->with(['causer', 'subject'])
-            ->when($this->search !== '', function (Builder $query) {
-                $query->where(function (Builder $query) {
-                    $query->where('description', 'like', "%{$this->search}%")
-                        ->orWhereHasMorph('causer', [User::class], function (Builder $query) {
-                            $query->where('name', 'like', "%{$this->search}%");
-                        });
-                });
-            })
-            ->when($this->event !== '', fn (Builder $query) => $query->where('event', $this->event))
-            ->when($this->subjectType !== '', fn (Builder $query) => $query->where('subject_type', $this->subjectType))
-            ->when($this->dateRange !== '', function (Builder $query) {
-                [$from, $to] = array_pad(array_map('trim', explode(' to ', $this->dateRange, 2)), 2, null);
-
-                $query->when($from, fn (Builder $query) => $query->whereDate('created_at', '>=', $from))
-                    ->when($to, fn (Builder $query) => $query->whereDate('created_at', '<=', $to));
-            })
-            ->latest()
-            ->paginate(15);
+        return app(ActivityLogService::class)->paginate(
+            search: $this->search,
+            perPage: $this->perPage,
+            filters: [
+                'event' => $this->event,
+                'subjectType' => $this->subjectType,
+                'dateRange' => $this->dateRange,
+            ],
+        );
     }
 
     public function render(): View
