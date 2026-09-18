@@ -87,6 +87,29 @@ export function initFormComponents(Alpine) {
                 // silently dropping the placeholder text entirely.
                 placeholderValue: this.$refs.select.getAttribute('placeholder'),
             });
+
+            // Choices dispatches its own `change` CustomEvent with
+            // `detail: { value, ... }` (metadata, not the bare value) -
+            // but Livewire's wire:model treats ANY CustomEvent's `.detail`
+            // as the new model value directly (see livewire.js's
+            // getInputValue(), which assumes a well-behaved custom
+            // element passes the value itself as detail). That mismatch
+            // makes Livewire store the whole `{value: ...}` object instead
+            // of the string/array inside it - harmless-looking for an
+            // array-typed multi-select, but a hard TypeError ("Cannot
+            // assign array to property ... of type string") for a plain
+            // single-select filter. Intercepting in the capture phase on
+            // the wrapping element runs before the event ever reaches the
+            // <select> (and Livewire's listener on it), so the bad event
+            // never arrives - a clean, non-Custom change event is
+            // dispatched in its place, which Livewire reads
+            // `event.target.value` from instead.
+            this.$el.addEventListener('change', (event) => {
+                if (event.target === this.$refs.select && event instanceof CustomEvent) {
+                    event.stopPropagation();
+                    this.$refs.select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }, true);
         },
 
         destroy() {
