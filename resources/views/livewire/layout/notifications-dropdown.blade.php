@@ -38,7 +38,7 @@
         </div>
 
         <div class="border-t border-gray-100 px-4 py-2 text-center dark:border-white/10">
-            <a href="{{ route('notifications.index') }}" class="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">
+            <a href="{{ route('admin.notifications.index') }}" class="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">
                 View all
             </a>
         </div>

@@ -3,7 +3,7 @@
     <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Enter your email and we'll send you a link to reset your password.</p>
 
     @if (session('status'))
-        <x-ui.alert type="success" class="mb-6">{{ session('status') }}</x-ui.alert>
+        <div x-init="showToast('success', @js(session('status')))"></div>
     @endif
 
     <form method="POST" action="{{ route('password.email') }}" class="space-y-5">

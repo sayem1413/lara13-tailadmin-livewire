@@ -17,16 +17,22 @@ class SyncPermissionsFromRoutes extends Command
 {
     /**
      * Route name patterns (fnmatch-style) to skip - for routes that exist
-     * but shouldn't become their own grantable permission, for example an
-     * AJAX search endpoint meant to be gated by the same permission as the
-     * page it searches, or an export action meant to be gated by its
-     * module's "index" permission rather than one of its own. Empty by
-     * default; add patterns as those situations come up, e.g.
-     * 'admin.*.search' or 'admin.reports.*.export'.
+     * but shouldn't become their own grantable permission. The dashboard,
+     * notifications, and profile pages have no permission of their own by
+     * design - every active user can reach them regardless of role - so a
+     * permission for them would sit in the Role editor without controlling
+     * anything. Add further patterns as similar situations come up, e.g.
+     * an AJAX search endpoint meant to be gated by the same permission as
+     * the page it searches, or an export action gated by its module's
+     * "index" permission rather than one of its own.
      *
      * @var array<int, string>
      */
-    protected array $ignoredRoutes = [];
+    protected array $ignoredRoutes = [
+        'admin.dashboard.*',
+        'admin.notifications.*',
+        'admin.profile.*',
+    ];
 
     /**
      * Execute the console command.

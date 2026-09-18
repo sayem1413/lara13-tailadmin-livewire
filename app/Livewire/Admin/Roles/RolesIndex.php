@@ -17,8 +17,6 @@ class RolesIndex extends Component
     #[Url]
     public string $search = '';
 
-    public ?string $error = null;
-
     public function updatingSearch(): void
     {
         $this->resetPage();
@@ -26,12 +24,10 @@ class RolesIndex extends Component
 
     public function delete(Role $role): void
     {
-        $this->error = null;
-
         // Bypasses Gate::before too: a Super Admin actor must not be able
         // to delete the one role every Gate::before check depends on.
         if ($role->name === 'Super Admin') {
-            $this->error = 'The Super Admin role cannot be deleted.';
+            $this->dispatch('toast', type: 'error', message: 'The Super Admin role cannot be deleted.');
 
             return;
         }
@@ -39,12 +35,14 @@ class RolesIndex extends Component
         Gate::authorize('delete', $role);
 
         if ($role->users()->exists()) {
-            $this->error = "\"{$role->name}\" is assigned to at least one user and can't be deleted.";
+            $this->dispatch('toast', type: 'error', message: "\"{$role->name}\" is assigned to at least one user and can't be deleted.");
 
             return;
         }
 
         $role->delete();
+
+        $this->dispatch('toast', type: 'success', message: "\"{$role->name}\" deleted.");
     }
 
     public function render(): View

@@ -4,10 +4,6 @@
         <p class="text-sm text-gray-500 dark:text-gray-400">Manage application-wide settings.</p>
     </div>
 
-    @if (session('success'))
-        <x-ui.alert type="success" class="mb-6">{{ session('success') }}</x-ui.alert>
-    @endif
-
     <form wire:submit="save" class="max-w-3xl space-y-5">
         @foreach ($schema as $group)
             <x-ui.card :title="$group['label']">

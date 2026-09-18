@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -38,6 +39,14 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetPasswordView(fn (Request $request) => view('auth.reset-password', [
             'request' => $request,
         ]));
+
+        // Fortify's login/forgot-password/reset-password routes - and our
+        // own guest-only "/" route - are all wrapped in the "guest"
+        // middleware, which redirects an already-authenticated visitor
+        // away. Its default target only knows routes literally named
+        // "dashboard" or "home", neither of which exists once the
+        // dashboard route is namespaced under "admin.".
+        RedirectIfAuthenticated::redirectUsing(fn () => route('admin.dashboard.index'));
 
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());

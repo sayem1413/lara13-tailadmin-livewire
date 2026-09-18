@@ -16,8 +16,17 @@ it('creates a permission for every named admin route', function () {
 it('does not create a permission for a non-admin route', function () {
     $this->artisan('permissions:sync');
 
-    expect(Permission::query()->where('name', 'dashboard')->exists())->toBeFalse()
-        ->and(Permission::query()->where('name', 'profile.edit')->exists())->toBeFalse();
+    expect(Permission::query()->where('name', 'login')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'home')->exists())->toBeFalse();
+});
+
+it('does not create a permission for an ignored admin route', function () {
+    $this->artisan('permissions:sync');
+
+    expect(Permission::query()->where('name', 'admin.dashboard.index')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.notifications.index')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.profile.edit')->exists())->toBeFalse()
+        ->and(Permission::query()->where('name', 'admin.profile.password')->exists())->toBeFalse();
 });
 
 it('records the module and section derived from the route name', function () {

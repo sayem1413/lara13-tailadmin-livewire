@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Hash;
 it('renders the change password page', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->get(route('profile.password'))
+    $this->actingAs($user)->get(route('admin.profile.password'))
         ->assertOk()
         ->assertSee('Change Password');
 });

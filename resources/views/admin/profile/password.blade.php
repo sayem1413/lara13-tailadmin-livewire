@@ -6,7 +6,7 @@
 
     <x-ui.card class="max-w-2xl">
         @if (session('status') === 'password-updated')
-            <x-ui.alert type="success" class="mb-6">Your password has been updated.</x-ui.alert>
+            <div x-init="showToast('success', 'Your password has been updated.')"></div>
         @endif
 
         <form method="POST" action="{{ route('user-password.update') }}" class="space-y-5">

@@ -14,7 +14,14 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
     </head>
-    <body class="bg-gray-50 font-sans antialiased dark:bg-gray-900" x-data="{ sidebarOpen: false }">
+    <body
+        class="bg-gray-50 font-sans antialiased dark:bg-gray-900"
+        x-data="{ sidebarOpen: false }"
+        x-init="
+            @if (session('success')) showToast('success', @js(session('success'))); @endif
+            @if (session('error')) showToast('error', @js(session('error'))); @endif
+        "
+    >
         <div class="flex h-screen overflow-hidden">
             <x-layout.sidebar :menu="$menu" />
 
@@ -22,10 +29,6 @@
                 <x-layout.header />
 
                 <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    @if (session('success'))
-                        <x-ui.alert type="success" class="mb-6">{{ session('success') }}</x-ui.alert>
-                    @endif
-
                     {{ $slot }}
                 </main>
             </div>

@@ -23,7 +23,7 @@ return [
             [
                 'label' => 'Dashboard',
                 'icon' => 'grid',
-                'route' => 'dashboard',
+                'route' => 'admin.dashboard.index',
                 'permission' => null,
                 'order' => 1,
             ],

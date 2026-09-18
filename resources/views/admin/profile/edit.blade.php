@@ -6,7 +6,7 @@
 
     <x-ui.card class="max-w-2xl">
         @if (session('status') === 'profile-information-updated')
-            <x-ui.alert type="success" class="mb-6">Your profile has been updated.</x-ui.alert>
+            <div x-init="showToast('success', 'Your profile has been updated.')"></div>
         @endif
 
         <form method="POST" action="{{ route('user-profile-information.update') }}" enctype="multipart/form-data" class="space-y-5">

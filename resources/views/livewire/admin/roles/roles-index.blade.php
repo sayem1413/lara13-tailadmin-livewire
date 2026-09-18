@@ -12,14 +12,6 @@
         @endcan
     </div>
 
-    @if (session('success'))
-        <x-ui.alert type="success" class="mb-6">{{ session('success') }}</x-ui.alert>
-    @endif
-
-    @if ($error)
-        <x-ui.alert type="error" class="mb-6">{{ $error }}</x-ui.alert>
-    @endif
-
     <x-ui.card :padded="false">
         <div class="border-b border-gray-100 p-4 dark:border-white/10">
             <div class="max-w-xs">

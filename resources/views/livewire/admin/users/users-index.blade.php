@@ -12,10 +12,6 @@
         @endcan
     </div>
 
-    @if (session('success'))
-        <x-ui.alert type="success" class="mb-6">{{ session('success') }}</x-ui.alert>
-    @endif
-
     <x-ui.card :padded="false">
         <div class="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4 dark:border-white/10">
             <div class="min-w-[220px] flex-1">

@@ -14,7 +14,7 @@ it('lists the user\'s notifications on the notifications page', function () {
         'read_at' => null,
     ]);
 
-    $this->actingAs($user)->get(route('notifications.index'))
+    $this->actingAs($user)->get(route('admin.notifications.index'))
         ->assertOk()
         ->assertSee('Something happened');
 });

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 it('renders the profile page with the current user\'s details', function () {
     $user = User::factory()->create(['name' => 'Original Name']);
 
-    $this->actingAs($user)->get(route('profile.edit'))
+    $this->actingAs($user)->get(route('admin.profile.edit'))
         ->assertOk()
         ->assertSee('Original Name');
 });

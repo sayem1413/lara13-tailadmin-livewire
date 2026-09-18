@@ -3,7 +3,7 @@
     <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Enter your email and password to access your account.</p>
 
     @if (session('status'))
-        <x-ui.alert type="success" class="mb-6">{{ session('status') }}</x-ui.alert>
+        <div x-init="showToast('success', @js(session('status')))"></div>
     @endif
 
     <form method="POST" action="{{ route('login.store') }}" class="space-y-5">

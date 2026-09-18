@@ -42,7 +42,10 @@ it('deletes a role with no users assigned', function () {
 
     Livewire::actingAs($actor)
         ->test(RolesIndex::class)
-        ->call('delete', $role->id);
+        ->call('delete', $role->id)
+        ->assertDispatched('toast', function (string $name, array $params) {
+            return $params['type'] === 'success';
+        });
 
     expect(Role::find($role->id))->toBeNull();
 });
@@ -58,7 +61,9 @@ it('refuses to delete a role that still has users assigned', function () {
     Livewire::actingAs($actor)
         ->test(RolesIndex::class)
         ->call('delete', $role->id)
-        ->assertSee("can't be deleted");
+        ->assertDispatched('toast', function (string $name, array $params) {
+            return $params['type'] === 'error' && str_contains($params['message'], "can't be deleted");
+        });
 
     expect(Role::find($role->id))->not->toBeNull();
 });
@@ -71,7 +76,10 @@ it('refuses to delete the Super Admin role even for a Super Admin actor', functi
 
     Livewire::actingAs($actor)
         ->test(RolesIndex::class)
-        ->call('delete', Role::findByName('Super Admin')->id);
+        ->call('delete', Role::findByName('Super Admin')->id)
+        ->assertDispatched('toast', function (string $name, array $params) {
+            return $params['type'] === 'error' && str_contains($params['message'], 'Super Admin role cannot be deleted');
+        });
 
     expect(Role::findByName('Super Admin'))->not->toBeNull();
 });

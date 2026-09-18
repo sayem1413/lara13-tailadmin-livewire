@@ -13,7 +13,7 @@
     class="fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col border-r border-gray-200 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 dark:border-white/10 dark:bg-gray-900"
 >
     <div class="flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 px-6 dark:border-white/10">
-        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-white/90">
+        <a href="{{ route('admin.dashboard.index') }}" class="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-white/90">
             <span class="flex size-8 items-center justify-center rounded-lg bg-brand-500 text-sm font-bold text-white">
                 {{ Str::substr(setting('app_name', config('app.name')), 0, 1) }}
             </span>

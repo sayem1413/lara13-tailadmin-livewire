@@ -51,7 +51,11 @@ class SettingsForm extends Component
 
         $settings->setMany($validated['values']);
 
-        session()->flash('success', 'Settings updated.');
+        // save() doesn't redirect - it re-renders this same page - so a
+        // session flash would never be seen: nothing triggers a fresh page
+        // load for x-app-layout to pick it up. Dispatching a browser event
+        // instead delivers the toast immediately, in this same response.
+        $this->dispatch('toast', type: 'success', message: 'Settings updated.');
     }
 
     /**

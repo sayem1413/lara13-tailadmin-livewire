@@ -50,7 +50,10 @@ it('persists submitted values through the setting service', function () {
         ->set('values.support_email', 'support@example.com')
         ->set('values.maintenance_mode', true)
         ->call('save')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast', function (string $name, array $params) {
+            return $params['type'] === 'success';
+        });
 
     $settings = app(SettingService::class);
 
