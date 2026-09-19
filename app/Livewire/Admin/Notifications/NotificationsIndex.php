@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Notifications;
 
+use App\Services\Notification\NotificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -18,12 +19,12 @@ class NotificationsIndex extends Component
 
     public function markAsRead(string $notificationId): void
     {
-        auth()->user()->notifications()->whereKey($notificationId)->update(['read_at' => now()]);
+        app(NotificationService::class)->markAsRead(auth()->user(), $notificationId);
     }
 
     public function markAllAsRead(): void
     {
-        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+        app(NotificationService::class)->markAllAsRead(auth()->user());
     }
 
     public function render(): View
@@ -38,9 +39,6 @@ class NotificationsIndex extends Component
      */
     protected function notifications(): LengthAwarePaginator
     {
-        return auth()->user()
-            ->notifications()
-            ->latest()
-            ->paginate($this->perPage, page: 1);
+        return app(NotificationService::class)->paginateForUser(auth()->user(), $this->perPage);
     }
 }

@@ -27,6 +27,7 @@
             @forelse ($this->notifications as $notification)
                 <button
                     type="button"
+                    wire:key="notification-dropdown-{{ $notification->id }}"
                     wire:click="markAsRead('{{ $notification->id }}')"
                     class="block w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-white/5 {{ $notification->read_at ? '' : 'bg-brand-50/50 dark:bg-brand-500/5' }}"
                 >

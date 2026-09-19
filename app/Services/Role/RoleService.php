@@ -2,8 +2,8 @@
 
 namespace App\Services\Role;
 
-use App\Models\Permission\Permission;
 use App\Models\Permission\Role;
+use App\Repositories\Interfaces\Permission\PermissionRepositoryInterface;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,8 @@ use Illuminate\Validation\ValidationException;
 class RoleService
 {
     public function __construct(
-        protected RoleRepositoryInterface $roleRepository
+        protected RoleRepositoryInterface $roleRepository,
+        protected PermissionRepositoryInterface $permissionRepository
     ) {}
 
     /**
@@ -59,6 +60,11 @@ class RoleService
         });
     }
 
+    public function findOrFail(int $id): Role
+    {
+        return $this->roleRepository->findOrFail($id);
+    }
+
     public function deleteRole(Role $role): bool
     {
         $this->guardAgainstSuperAdminRole($role, 'deleted');
@@ -83,16 +89,7 @@ class RoleService
      */
     public function expandPermissions(array $names): array
     {
-        if ($names === []) {
-            return $names;
-        }
-
-        $ids = Permission::query()->whereIn('name', $names)->pluck('id')->all();
-
-        return Permission::query()
-            ->whereIn('id', Permission::expandWithImplied($ids))
-            ->pluck('name')
-            ->all();
+        return $this->permissionRepository->expandWithImpliedNames($names);
     }
 
     /**

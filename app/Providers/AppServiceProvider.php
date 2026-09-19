@@ -8,10 +8,16 @@ use App\Models\Permission\Role;
 use App\Models\User;
 use App\Policies\RolePolicy;
 use App\Repositories\Eloquent\ActivityLog\ActivityLogRepository;
+use App\Repositories\Eloquent\Dashboard\DashboardRepository;
+use App\Repositories\Eloquent\Notification\NotificationRepository;
+use App\Repositories\Eloquent\Permission\PermissionRepository;
 use App\Repositories\Eloquent\Role\RoleRepository;
 use App\Repositories\Eloquent\Setting\SettingRepository;
 use App\Repositories\Eloquent\User\UserRepository;
 use App\Repositories\Interfaces\ActivityLog\ActivityLogRepositoryInterface;
+use App\Repositories\Interfaces\Dashboard\DashboardRepositoryInterface;
+use App\Repositories\Interfaces\Notification\NotificationRepositoryInterface;
+use App\Repositories\Interfaces\Permission\PermissionRepositoryInterface;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
@@ -34,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(SettingRepositoryInterface::class, SettingRepository::class);
         $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
+        $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
+        $this->app->bind(DashboardRepositoryInterface::class, DashboardRepository::class);
+        $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
     }
 
     /**

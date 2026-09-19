@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Roles;
 
 use App\Models\Permission\Permission;
 use App\Models\Permission\Role;
+use App\Services\Permission\PermissionService;
 use App\Services\Role\RoleService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -51,7 +52,7 @@ class RoleForm extends Component
 
     public function save(): void
     {
-        $role = $this->roleId ? Role::findOrFail($this->roleId) : null;
+        $role = $this->roleId ? app(RoleService::class)->findOrFail($this->roleId) : null;
 
         Gate::authorize($this->roleId ? 'update' : 'create', $role ?? Role::class);
 
@@ -107,7 +108,7 @@ class RoleForm extends Component
      */
     public function toggleAllPermissions(): void
     {
-        $allNames = Permission::query()->pluck('name')->all();
+        $allNames = app(PermissionService::class)->allNames();
 
         $allSelected = empty(array_diff($allNames, $this->selectedPermissions));
 
@@ -132,11 +133,7 @@ class RoleForm extends Component
      */
     protected function permissionGroups(): Collection
     {
-        return Permission::query()
-            ->orderBy('module')
-            ->orderBy('section')
-            ->get()
-            ->groupBy(fn (Permission $permission): string => $permission->module ?? $permission->name);
+        return app(PermissionService::class)->groupedByModule();
     }
 
     public function render(): View

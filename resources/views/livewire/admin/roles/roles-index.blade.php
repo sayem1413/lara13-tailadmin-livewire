@@ -19,18 +19,18 @@
             </div>
         </div>
 
-        <div class="hidden overflow-x-auto md:block">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Name</th>
-                        <th class="px-4 py-3 font-medium">Permissions</th>
-                        <th class="px-4 py-3 font-medium">Users</th>
-                        <th class="px-4 py-3 font-medium">&nbsp;</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-white/10">
-                    @forelse ($roles as $role)
+        <x-ui.table>
+            <x-slot:head>
+                <tr>
+                    <th class="px-4 py-3 font-medium">Name</th>
+                    <th class="px-4 py-3 font-medium">Permissions</th>
+                    <th class="px-4 py-3 font-medium">Users</th>
+                    <th class="px-4 py-3 font-medium">&nbsp;</th>
+                </tr>
+            </x-slot:head>
+
+            <tbody class="divide-y divide-gray-100 dark:divide-white/10">
+                @forelse ($roles as $role)
                         <tr wire:key="role-{{ $role->id }}">
                             <td class="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</td>
                             <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $role->permissions_count }}</td>
@@ -70,8 +70,7 @@
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-ui.table>
 
         <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
             @forelse ($roles as $role)

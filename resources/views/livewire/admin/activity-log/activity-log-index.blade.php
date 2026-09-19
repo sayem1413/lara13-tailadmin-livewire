@@ -33,19 +33,19 @@
             </div>
         </div>
 
-        <div class="hidden overflow-x-auto md:block">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Date</th>
-                        <th class="px-4 py-3 font-medium">Causer</th>
-                        <th class="px-4 py-3 font-medium">Event</th>
-                        <th class="px-4 py-3 font-medium">Subject</th>
-                        <th class="px-4 py-3 font-medium">Description</th>
-                        <th class="px-4 py-3 font-medium">&nbsp;</th>
-                    </tr>
-                </thead>
-                @forelse ($activities as $activity)
+        <x-ui.table>
+            <x-slot:head>
+                <tr>
+                    <th class="px-4 py-3 font-medium">Date</th>
+                    <th class="px-4 py-3 font-medium">Causer</th>
+                    <th class="px-4 py-3 font-medium">Event</th>
+                    <th class="px-4 py-3 font-medium">Subject</th>
+                    <th class="px-4 py-3 font-medium">Description</th>
+                    <th class="px-4 py-3 font-medium">&nbsp;</th>
+                </tr>
+            </x-slot:head>
+
+            @forelse ($activities as $activity)
                     <tbody
                         class="divide-y divide-gray-100 dark:divide-white/10"
                         @if ($activity->properties && $activity->properties->isNotEmpty()) x-data="{ open: false }" @endif
@@ -93,8 +93,7 @@
                         </tr>
                     </tbody>
                 @endforelse
-            </table>
-        </div>
+        </x-ui.table>
 
         <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
             @forelse ($activities as $activity)

@@ -42,7 +42,7 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-white/10">
                         @foreach ($permissionGroups as $group => $permissions)
                             @php $namesInGroup = $permissions->pluck('name')->all(); @endphp
-                            <tr>
+                            <tr wire:key="permission-group-{{ $group }}">
                                 <td class="py-3 pr-4 align-top whitespace-nowrap">
                                     <label class="flex items-center gap-2 text-sm font-medium text-gray-800 capitalize dark:text-white/90">
                                         <x-forms.checkbox
@@ -55,7 +55,7 @@
                                 <td class="py-3 pr-4">
                                     <div class="flex flex-wrap gap-4">
                                         @foreach ($permissions as $permission)
-                                            <label class="flex min-h-11 items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <label wire:key="permission-{{ $permission->id }}" class="flex min-h-11 items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                                 <x-forms.checkbox wire:model.live="selectedPermissions" value="{{ $permission->name }}" />
                                                 {{ Str::headline($permission->section ?? $permission->name) }}
                                             </label>

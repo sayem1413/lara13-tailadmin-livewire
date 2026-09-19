@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Layout;
 
+use App\Services\Notification\NotificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
@@ -14,15 +15,16 @@ class NotificationsDropdown extends Component
 
     public function markAsRead(string $notificationId): void
     {
-        auth()->user()->notifications()->whereKey($notificationId)->first()?->markAsRead();
+        $user = auth()->user();
+
+        app(NotificationService::class)->markAsRead($user, $notificationId);
     }
 
     public function markAllAsRead(): void
     {
-        // ->unreadNotifications (a property) loads the whole collection and
-        // marks each one read with its own UPDATE query; the relation
-        // method instead issues a single UPDATE covering every row.
-        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+        $user = auth()->user();
+
+        app(NotificationService::class)->markAllAsRead($user);
     }
 
     /**
@@ -31,13 +33,17 @@ class NotificationsDropdown extends Component
     #[Computed]
     public function notifications(): Collection
     {
-        return auth()->user()->notifications()->latest()->limit($this->limit)->get();
+        $user = auth()->user();
+
+        return app(NotificationService::class)->latestForUser($user, $this->limit);
     }
 
     #[Computed]
     public function unreadCount(): int
     {
-        return auth()->user()->unreadNotifications()->count();
+        $user = auth()->user();
+
+        return app(NotificationService::class)->unreadCountForUser($user);
     }
 
     public function render(): View

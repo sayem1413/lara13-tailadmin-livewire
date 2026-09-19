@@ -56,24 +56,24 @@
             @endif
         </div>
 
-        <div class="hidden overflow-x-auto md:block">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-100 text-xs text-gray-500 uppercase dark:border-white/10 dark:text-gray-400">
-                    <tr>
-                        <th class="w-10 px-4 py-3">
-                            <x-forms.checkbox
-                                wire:click="toggleSelectAllOnPage"
-                                :checked="$this->allOnPageSelected($users->pluck('id')->all())"
-                            />
-                        </th>
-                        <th class="px-4 py-3 font-medium">Name</th>
-                        <th class="px-4 py-3 font-medium">Roles</th>
-                        <th class="px-4 py-3 font-medium">Status</th>
-                        <th class="px-4 py-3 font-medium">&nbsp;</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-white/10">
-                    @forelse ($users as $user)
+        <x-ui.table>
+            <x-slot:head>
+                <tr>
+                    <th class="w-10 px-4 py-3">
+                        <x-forms.checkbox
+                            wire:click="toggleSelectAllOnPage"
+                            :checked="$this->allOnPageSelected($users->pluck('id')->all())"
+                        />
+                    </th>
+                    <th class="px-4 py-3 font-medium">Name</th>
+                    <th class="px-4 py-3 font-medium">Roles</th>
+                    <th class="px-4 py-3 font-medium">Status</th>
+                    <th class="px-4 py-3 font-medium">&nbsp;</th>
+                </tr>
+            </x-slot:head>
+
+            <tbody class="divide-y divide-gray-100 dark:divide-white/10">
+                @forelse ($users as $user)
                         <tr wire:key="user-{{ $user->id }}">
                             <td class="px-4 py-3">
                                 <x-forms.checkbox wire:model.live="selected" value="{{ $user->id }}" />
@@ -131,8 +131,7 @@
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-ui.table>
 
         <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
             @forelse ($users as $user)
