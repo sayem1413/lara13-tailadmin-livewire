@@ -19,7 +19,10 @@ class NotificationsDropdown extends Component
 
     public function markAllAsRead(): void
     {
-        auth()->user()->unreadNotifications->markAsRead();
+        // ->unreadNotifications (a property) loads the whole collection and
+        // marks each one read with its own UPDATE query; the relation
+        // method instead issues a single UPDATE covering every row.
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
     }
 
     /**

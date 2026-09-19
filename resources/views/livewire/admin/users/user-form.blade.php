@@ -57,7 +57,7 @@
                     @endforeach
                 </x-forms.select>
             @endif
-            <x-forms.error for="selectedRoles" />
+            <x-forms.error for="selectedRoles.*" />
         </x-ui.card>
 
         <div class="flex items-center gap-3">

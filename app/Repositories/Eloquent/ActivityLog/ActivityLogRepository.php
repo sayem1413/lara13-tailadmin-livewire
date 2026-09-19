@@ -21,7 +21,10 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      */
     public function paginate(?string $search = null, int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        $query = $this->model->query()->with(['causer', 'subject']);
+        // Only 'causer' is eager-loaded: the view reads subject_type (a
+        // plain column) via class_basename(), never the 'subject' morphTo
+        // relation itself, so loading it would just be a wasted query.
+        $query = $this->model->query()->with('causer');
 
         // Not applySearch(): a search term must also match the causer's
         // name via a morph relation, which is a single column list can't

@@ -28,7 +28,7 @@ return [
             'description' => 'email',
             'route' => 'admin.users.edit',
             'route_param' => 'user',
-            'permission' => 'users.view',
+            'permission' => 'admin.users.index',
         ],
     ],
 

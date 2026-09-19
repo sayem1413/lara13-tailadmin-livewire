@@ -6,6 +6,7 @@ use App\Models\Permission\Permission;
 use App\Models\Permission\Role;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class RoleService
@@ -29,11 +30,13 @@ class RoleService
     {
         $permissions = $data['permissions'] ?? [];
 
-        $role = $this->roleRepository->create(['name' => $data['name']]);
+        return DB::transaction(function () use ($data, $permissions) {
+            $role = $this->roleRepository->create(['name' => $data['name']]);
 
-        $role->syncPermissions($this->expandPermissions($permissions));
+            $role->syncPermissions($this->expandPermissions($permissions));
 
-        return $role;
+            return $role;
+        });
     }
 
     /**
@@ -45,13 +48,15 @@ class RoleService
 
         $permissions = $data['permissions'] ?? null;
 
-        $role = $this->roleRepository->update($role, ['name' => $data['name']]);
+        return DB::transaction(function () use ($role, $data, $permissions) {
+            $role = $this->roleRepository->update($role, ['name' => $data['name']]);
 
-        if ($permissions !== null) {
-            $role->syncPermissions($this->expandPermissions($permissions));
-        }
+            if ($permissions !== null) {
+                $role->syncPermissions($this->expandPermissions($permissions));
+            }
 
-        return $role;
+            return $role;
+        });
     }
 
     public function deleteRole(Role $role): bool

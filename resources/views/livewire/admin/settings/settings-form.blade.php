@@ -24,7 +24,7 @@
                                         @endforeach
                                     </x-forms.select>
                                 @else
-                                    <x-forms.input type="text" :icon="$field['icon'] ?? null" id="{{ $key }}" wire:model="values.{{ $key }}" />
+                                    <x-forms.input type="{{ $field['input_type'] ?? 'text' }}" :icon="$field['icon'] ?? null" id="{{ $key }}" wire:model="values.{{ $key }}" />
                                 @endif
                             @endif
 

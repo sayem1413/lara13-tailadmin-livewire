@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class SettingService
 {
@@ -39,9 +40,11 @@ class SettingService
      */
     public function setMany(array $values): void
     {
-        foreach ($values as $key => $value) {
-            $this->settingRepository->set($key, $value);
-        }
+        DB::transaction(function () use ($values) {
+            foreach ($values as $key => $value) {
+                $this->settingRepository->set($key, $value);
+            }
+        });
 
         Cache::forget(self::CACHE_KEY);
     }
@@ -78,7 +81,11 @@ class SettingService
 
         foreach ($this->schema() as $group) {
             foreach ($group['fields'] as $key => $field) {
-                $rules["values.{$key}"] = match ($field['type']) {
+                // Most fields validate purely off their render "type", but
+                // that can't express a semantic format (email, url, ...)
+                // without a matching input type to render - so a field can
+                // declare its own "rules" to override the type-based default.
+                $rules["values.{$key}"] = $field['rules'] ?? match ($field['type']) {
                     'boolean' => ['boolean'],
                     'select' => ['nullable', 'string', 'in:'.implode(',', array_keys($field['options'] ?? []))],
                     default => ['nullable', 'string', 'max:2000'],

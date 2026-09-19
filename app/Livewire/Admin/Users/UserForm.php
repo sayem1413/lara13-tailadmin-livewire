@@ -65,7 +65,7 @@ class UserForm extends Component
 
     public function save(): void
     {
-        $user = $this->userId ? User::findOrFail($this->userId) : null;
+        $user = $this->userId ? app(UserService::class)->findOrFail($this->userId) : null;
 
         Gate::authorize($this->userId ? 'update' : 'create', $user ?? User::class);
 

@@ -9,6 +9,8 @@
     </div>
 
     <form wire:submit="save" class="max-w-3xl space-y-5">
+        <x-forms.error for="role" />
+
         <x-ui.card>
             <x-forms.label for="name">Role Name</x-forms.label>
             <x-forms.input type="text" icon="shield" id="name" wire:model="name" required />
@@ -53,7 +55,7 @@
                                 <td class="py-3 pr-4">
                                     <div class="flex flex-wrap gap-4">
                                         @foreach ($permissions as $permission)
-                                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <label class="flex min-h-11 items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                                 <x-forms.checkbox wire:model.live="selectedPermissions" value="{{ $permission->name }}" />
                                                 {{ Str::headline($permission->section ?? $permission->name) }}
                                             </label>
@@ -65,7 +67,7 @@
                     </tbody>
                 </table>
             </div>
-            <x-forms.error for="selectedPermissions" />
+            <x-forms.error for="selectedPermissions.*" />
         </x-ui.card>
 
         <div class="flex items-center gap-3">

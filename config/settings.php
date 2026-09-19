@@ -12,6 +12,11 @@
 | "icon" (see x-ui.icon) shown inside a text field. Add new groups/fields
 | here to extend the Settings page - no view or component changes needed.
 |
+| A "text" field also accepts an optional "input_type" (e.g. "email") to
+| set the rendered <input>'s HTML type, and an optional "rules" array to
+| override the type-based default validation in SettingService with a
+| semantic one (email, url, numeric, ...).
+|
 */
 
 return [
@@ -27,8 +32,10 @@ return [
             'support_email' => [
                 'label' => 'Support Email',
                 'type' => 'text',
+                'input_type' => 'email',
                 'icon' => 'mail',
                 'default' => null,
+                'rules' => ['nullable', 'email', 'max:255'],
             ],
             'maintenance_mode' => [
                 'label' => 'Maintenance Mode',

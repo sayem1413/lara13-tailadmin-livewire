@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -36,11 +37,15 @@ class UserService
         $roles = $data['roles'] ?? [];
         unset($data['roles']);
 
-        $user = $this->userRepository->create($data);
+        $this->guardAgainstUnassignableSuperAdminRole($roles);
 
-        $user->syncRoles($roles);
+        return DB::transaction(function () use ($data, $roles) {
+            $user = $this->userRepository->create($data);
 
-        return $user;
+            $user->syncRoles($roles);
+
+            return $user;
+        });
     }
 
     /**
@@ -62,17 +67,48 @@ class UserService
         $roles = $data['roles'] ?? null;
         unset($data['roles']);
 
+        if ($roles !== null) {
+            $this->guardAgainstUnassignableSuperAdminRole($roles);
+        }
+
         if (empty($data['password'])) {
             unset($data['password']);
         }
 
-        $user = $this->userRepository->update($user, $data);
+        return DB::transaction(function () use ($user, $data, $roles) {
+            $user = $this->userRepository->update($user, $data);
 
-        if ($roles !== null) {
-            $user->syncRoles($roles);
+            if ($roles !== null) {
+                $user->syncRoles($roles);
+            }
+
+            return $user;
+        });
+    }
+
+    /**
+     * The Users index and the Livewire form both build their role checkbox
+     * list from assignableRoles()/UserForm::assignableRoles(), which never
+     * offers "Super Admin" to a non-Super-Admin actor - but the resource
+     * Controller's routes (StoreUserRequest/UpdateUserRequest) only check
+     * that submitted role names exist, not who's allowed to grant them. A
+     * tampered or direct API request could otherwise smuggle "Super Admin"
+     * into $data['roles'] and self-promote.
+     *
+     * @param  array<int, string>  $roles
+     */
+    protected function guardAgainstUnassignableSuperAdminRole(array $roles): void
+    {
+        if (in_array('Super Admin', $roles, true) && ! auth()->user()?->hasRole('Super Admin')) {
+            throw ValidationException::withMessages([
+                'roles' => 'Only a Super Admin can assign the Super Admin role.',
+            ]);
         }
+    }
 
-        return $user;
+    public function findOrFail(int $id): User
+    {
+        return $this->userRepository->findOrFail($id);
     }
 
     public function deleteUser(User $user): bool

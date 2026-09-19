@@ -59,3 +59,23 @@ it('rejects a reset attempt with an invalid token', function () {
     $response->assertSessionHasErrors('email');
     expect(Hash::check('original-password', $user->fresh()->password))->toBeTrue();
 });
+
+it('throttles repeated password reset submissions for the same email', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('password.update'), [
+            'token' => 'not-a-real-token',
+            'email' => $user->email,
+            'password' => 'brand-new-password',
+            'password_confirmation' => 'brand-new-password',
+        ])->assertSessionHasErrors('email');
+    }
+
+    $this->post(route('password.update'), [
+        'token' => 'not-a-real-token',
+        'email' => $user->email,
+        'password' => 'brand-new-password',
+        'password_confirmation' => 'brand-new-password',
+    ])->assertTooManyRequests();
+});

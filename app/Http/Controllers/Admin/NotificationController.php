@@ -9,8 +9,6 @@ class NotificationController extends Controller
 {
     public function index(): View
     {
-        return view('admin.notifications.index', [
-            'notifications' => auth()->user()->notifications()->paginate(20),
-        ]);
+        return view('admin.notifications.index');
     }
 }

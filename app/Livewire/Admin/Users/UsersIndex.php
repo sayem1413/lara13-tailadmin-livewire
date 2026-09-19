@@ -9,6 +9,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -53,7 +54,16 @@ class UsersIndex extends Component
     {
         Gate::authorize('update', $user);
 
-        app(UserService::class)->updateUser($user, ['is_active' => ! $user->is_active]);
+        // The row's toggle button is hidden for the signed-in user's own
+        // row, but that's only a client-side guard - a tampered/direct
+        // `wire:click` call can still reach here, so the resulting
+        // ValidationException (see UserService::updateUser) needs its own
+        // feedback rather than failing with no visible effect.
+        try {
+            app(UserService::class)->updateUser($user, ['is_active' => ! $user->is_active]);
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+        }
     }
 
     public function delete(User $user): void
@@ -94,16 +104,35 @@ class UsersIndex extends Component
 
     public function bulkActivate(): void
     {
-        app(UserService::class)->bulkActivate($this->selected);
+        $affected = app(UserService::class)->bulkActivate($this->selected);
+
+        $this->reportBulkResult('Activated', $affected);
 
         $this->selected = [];
     }
 
     public function bulkDeactivate(): void
     {
-        app(UserService::class)->bulkDeactivate($this->selected);
+        $affected = app(UserService::class)->bulkDeactivate($this->selected);
+
+        $this->reportBulkResult('Deactivated', $affected);
 
         $this->selected = [];
+    }
+
+    /**
+     * UserService::bulkActivate()/bulkDeactivate() silently drop any
+     * selected id the actor isn't authorized to touch (e.g. a Super Admin
+     * row, or - for deactivate - the actor's own row), so without this the
+     * selection just clears with no indication only part of it changed.
+     */
+    protected function reportBulkResult(string $verb, int $affected): void
+    {
+        $skipped = count($this->selected) - $affected;
+
+        $this->dispatch('toast', type: $skipped > 0 ? 'warning' : 'success', message: $skipped > 0
+            ? "{$verb} {$affected} user(s); {$skipped} skipped (insufficient permission)."
+            : "{$verb} {$affected} user(s).");
     }
 
     /**

@@ -41,6 +41,46 @@ it('creates a user with the submitted roles', function () {
         ->and($user->hasRole('Editor'))->toBeTrue();
 });
 
+it('prevents a non-Super-Admin actor from assigning the Super Admin role on create', function () {
+    Permission::findOrCreate('admin.users.create');
+    Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.create');
+
+    $this->actingAs($actor)
+        ->post(route('admin.users.store'), [
+            'name' => 'New Person',
+            'email' => 'new-person@example.com',
+            'password' => 'a-secure-password',
+            'password_confirmation' => 'a-secure-password',
+            'roles' => ['Super Admin'],
+        ])
+        ->assertSessionHasErrors('roles');
+
+    expect(User::where('email', 'new-person@example.com')->exists())->toBeFalse();
+});
+
+it('prevents a non-Super-Admin actor from assigning the Super Admin role on update', function () {
+    Permission::findOrCreate('admin.users.edit');
+    Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.edit');
+
+    $target = User::factory()->create();
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.update', $target), [
+            'name' => $target->name,
+            'email' => $target->email,
+            'roles' => ['Super Admin'],
+        ])
+        ->assertSessionHasErrors('roles');
+
+    expect($target->fresh()->hasRole('Super Admin'))->toBeFalse();
+});
+
 it('updates an existing user without changing the password when left blank', function () {
     Permission::findOrCreate('admin.users.edit');
     $actor = User::factory()->create();
