@@ -5,11 +5,22 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Manage user accounts, roles, and access.</p>
         </div>
 
-        @can('create', \App\Models\User::class)
-            <a href="{{ route('admin.users.create') }}">
-                <x-ui.button>Add User</x-ui.button>
-            </a>
-        @endcan
+        <div class="flex items-center gap-2">
+            @can('admin.users.export')
+                <x-ui.button type="button" variant="secondary" wire:click="export">Export Excel</x-ui.button>
+                <x-button.export-pdf action="exportPdf" />
+            @endcan
+
+            @can('admin.users.import')
+                <x-import.button :model="\App\Models\User::class" permission="admin.users.import" title="Import Users" wire:key="import-users" />
+            @endcan
+
+            @can('create', \App\Models\User::class)
+                <a href="{{ route('admin.users.create') }}">
+                    <x-ui.button>Add User</x-ui.button>
+                </a>
+            @endcan
+        </div>
     </div>
 
     <x-ui.card :padded="false">

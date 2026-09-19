@@ -99,6 +99,22 @@ it('filters activity by an in-progress date range with only a start date picked'
         ->assertDontSee('Before the start date');
 });
 
+it('shows a readable before/after diff for an update instead of a raw JSON dump', function () {
+    Permission::findOrCreate('admin.activity-log.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.activity-log.index');
+
+    $subject = User::factory()->create(['name' => 'Old Name']);
+    $subject->update(['name' => 'New Name']);
+
+    $this->actingAs($actor)->get(route('admin.activity-log.index'))
+        ->assertOk()
+        ->assertSee('Old Name')
+        ->assertSee('New Name')
+        ->assertSee('Name')
+        ->assertDontSee('attributes');
+});
+
 it('filters activity by search term matching the description or causer name', function () {
     Permission::findOrCreate('admin.activity-log.index');
     $actor = User::factory()->create(['name' => 'Searchable Actor']);

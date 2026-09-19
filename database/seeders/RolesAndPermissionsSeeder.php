@@ -23,7 +23,9 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<string, array{module: string, section: string}>
      */
     protected array $manualPermissions = [
-        //
+        'admin.notifications.preferences.edit' => ['module' => 'notifications', 'section' => 'preferences.edit'],
+        'admin.users.import' => ['module' => 'users', 'section' => 'import'],
+        'admin.users.export' => ['module' => 'users', 'section' => 'export'],
     ];
 
     /**
@@ -40,6 +42,11 @@ class RolesAndPermissionsSeeder extends Seeder
         'admin.activity-log.index',
         'admin.settings.edit',
         'admin.settings.update',
+        'admin.notifications.preferences.edit',
+        'admin.media.index',
+        'admin.media.destroy',
+        'admin.users.import',
+        'admin.users.export',
     ];
 
     /**

@@ -4,6 +4,8 @@ namespace App\Livewire\Admin\Users;
 
 use App\Models\Permission\Role;
 use App\Models\User;
+use App\Services\Export\ExportService;
+use App\Services\Pdf\PdfService;
 use App\Services\User\UserService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -11,8 +13,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UsersIndex extends Component
 {
@@ -144,6 +149,37 @@ class UsersIndex extends Component
         return Role::query()->orderBy('name')->pluck('name');
     }
 
+    /**
+     * Re-renders this component (picking up the freshly imported rows)
+     * once <x-import.button>'s modal finishes importing.
+     */
+    #[On('imported')]
+    public function refreshAfterImport(): void {}
+
+    public function export(ExportService $exportService): BinaryFileResponse
+    {
+        Gate::authorize('admin.users.export');
+
+        $query = app(UserService::class)->filteredQuery(
+            search: $this->search,
+            sort: 'name_asc',
+            filters: $this->filters(),
+        );
+
+        return $exportService->export($query, User::class, 'users-'.now()->format('Y-m-d').'.xlsx');
+    }
+
+    public function exportPdf(PdfService $pdfService): StreamedResponse
+    {
+        Gate::authorize('admin.users.export');
+
+        $users = app(UserService::class)
+            ->filteredQuery(search: $this->search, sort: 'name_asc', filters: $this->filters())
+            ->get();
+
+        return $pdfService->streamFromView('pdf.users', ['users' => $users], 'users-'.now()->format('Y-m-d').'.pdf');
+    }
+
     public function render(): View
     {
         return view('livewire.admin.users.users-index', [
@@ -163,10 +199,18 @@ class UsersIndex extends Component
             // shared applySort() helper rather than adding a new sort
             // control to the UI.
             sort: 'name_asc',
-            filters: [
-                'role' => $this->role,
-                'is_active' => $this->status === '' ? null : $this->status === 'active',
-            ],
+            filters: $this->filters(),
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function filters(): array
+    {
+        return [
+            'role' => $this->role,
+            'is_active' => $this->status === '' ? null : $this->status === 'active',
+        ];
     }
 }

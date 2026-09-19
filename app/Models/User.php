@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Contracts\Exportable;
+use App\Contracts\Importable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -32,7 +34,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'password', 'is_active'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements Exportable, HasMedia, Importable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, InteractsWithMedia, LogsActivity, Notifiable, SoftDeletes;
@@ -95,5 +97,57 @@ class User extends Authenticatable implements HasMedia
             ->logOnly(['name', 'email', 'is_active'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function exportColumns(): array
+    {
+        return [
+            'name' => 'Name',
+            'email' => 'Email',
+            'is_active' => 'Active',
+            'created_at' => 'Joined At',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function importColumns(): array
+    {
+        return [
+            'name' => 'Name',
+            'email' => 'Email',
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public static function importRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        ];
+    }
+
+    /**
+     * Imported users get a random password rather than one from the
+     * spreadsheet - the file was likely emailed or shared as a plain
+     * attachment, which is not a safe channel for a real password. Use
+     * the password reset flow to give them access.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public static function fromImportRow(array $row): static
+    {
+        return static::query()->make([
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'password' => Str::random(32),
+        ]);
     }
 }

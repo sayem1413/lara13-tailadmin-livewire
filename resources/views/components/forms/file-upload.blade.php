@@ -27,6 +27,7 @@
             <span class="font-medium text-brand-600 dark:text-brand-400">Click to upload</span>
             <span class="text-gray-500 dark:text-gray-400"> or drag and drop</span>
             <p class="text-xs text-gray-400" x-text="hint"></p>
+            <p x-show="fileName && !previewUrl" x-text="fileName" class="mt-1 text-xs font-medium text-gray-600 dark:text-gray-300"></p>
         </div>
 
         <input

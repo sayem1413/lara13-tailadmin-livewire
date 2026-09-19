@@ -48,7 +48,7 @@
             @forelse ($activities as $activity)
                     <tbody
                         class="divide-y divide-gray-100 dark:divide-white/10"
-                        @if ($activity->properties && $activity->properties->isNotEmpty()) x-data="{ open: false }" @endif
+                        @if ($activity->attribute_changes && $activity->attribute_changes->isNotEmpty()) x-data="{ open: false }" @endif
                     >
                         <tr wire:key="activity-{{ $activity->id }}">
                             <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
@@ -69,17 +69,17 @@
                                 {{ $activity->description }}
                             </td>
                             <td class="px-4 py-3 text-right">
-                                @if ($activity->properties && $activity->properties->isNotEmpty())
+                                @if ($activity->attribute_changes && $activity->attribute_changes->isNotEmpty())
                                     <button type="button" @click="open = !open" class="font-medium text-brand-600 hover:underline dark:text-brand-400">
                                         <span x-text="open ? 'Hide' : 'View'"></span>
                                     </button>
                                 @endif
                             </td>
                         </tr>
-                        @if ($activity->properties && $activity->properties->isNotEmpty())
+                        @if ($activity->attribute_changes && $activity->attribute_changes->isNotEmpty())
                             <tr x-show="open" x-cloak wire:key="activity-{{ $activity->id }}-details">
                                 <td colspan="6" class="bg-gray-50 px-4 py-3 dark:bg-white/[0.02]">
-                                    <pre class="overflow-x-auto text-xs text-gray-600 dark:text-gray-300">{{ $activity->properties->toJson(JSON_PRETTY_PRINT) }}</pre>
+                                    <x-activity-log.diff :changes="$activity->attribute_changes" />
                                 </td>
                             </tr>
                         @endif
@@ -100,7 +100,7 @@
                 <div
                     wire:key="activity-mobile-{{ $activity->id }}"
                     class="p-4"
-                    @if ($activity->properties && $activity->properties->isNotEmpty()) x-data="{ open: false }" @endif
+                    @if ($activity->attribute_changes && $activity->attribute_changes->isNotEmpty()) x-data="{ open: false }" @endif
                 >
                     <div class="flex items-start justify-between gap-2">
                         <p class="text-sm text-gray-800 dark:text-white/90">{{ $activity->description }}</p>
@@ -117,12 +117,14 @@
                         @endif
                     </p>
 
-                    @if ($activity->properties && $activity->properties->isNotEmpty())
+                    @if ($activity->attribute_changes && $activity->attribute_changes->isNotEmpty())
                         <button type="button" @click="open = !open" class="mt-2 min-h-11 font-medium text-brand-600 dark:text-brand-400">
                             <span x-text="open ? 'Hide details' : 'View details'"></span>
                         </button>
 
-                        <pre x-show="open" x-cloak class="mt-2 overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-600 dark:bg-white/[0.02] dark:text-gray-300">{{ $activity->properties->toJson(JSON_PRETTY_PRINT) }}</pre>
+                        <div x-show="open" x-cloak class="mt-2">
+                            <x-activity-log.diff :changes="$activity->attribute_changes" />
+                        </div>
                     @endif
                 </div>
             @empty

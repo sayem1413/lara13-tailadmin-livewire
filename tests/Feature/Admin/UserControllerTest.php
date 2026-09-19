@@ -3,7 +3,9 @@
 use App\Models\Permission\Permission;
 use App\Models\Permission\Role;
 use App\Models\User;
+use App\Notifications\UserRoleUpdatedNotification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 it('forbids creating a user without the admin.users.create permission', function () {
     $actor = User::factory()->create();
@@ -115,6 +117,51 @@ it('prevents a user from deactivating their own account', function () {
         ->assertSessionHasErrors('is_active');
 
     expect($actor->fresh()->is_active)->toBeTrue();
+});
+
+it('notifies the target user when an admin changes their roles', function () {
+    Notification::fake();
+
+    Permission::findOrCreate('admin.users.edit');
+    Role::findOrCreate('Editor');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.edit');
+
+    $target = User::factory()->create();
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.update', $target), [
+            'name' => $target->name,
+            'email' => $target->email,
+            'roles' => ['Editor'],
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    Notification::assertSentTo($target, UserRoleUpdatedNotification::class);
+});
+
+it('does not notify the target user when their roles are left unchanged', function () {
+    Notification::fake();
+
+    Permission::findOrCreate('admin.users.edit');
+    Role::findOrCreate('Editor');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.edit');
+
+    $target = User::factory()->create();
+    $target->syncRoles(['Editor']);
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.update', $target), [
+            'name' => $target->name,
+            'email' => $target->email,
+            'roles' => ['Editor'],
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    Notification::assertNotSentTo($target, UserRoleUpdatedNotification::class);
 });
 
 it('forbids deleting a user without the admin.users.destroy permission', function () {

@@ -13,7 +13,7 @@ class GlobalSearch extends Component
     public string $query = '';
 
     /**
-     * @return Collection<int, array{module: string, title: mixed, description: mixed, url: string}>
+     * @return Collection<int, array{module: string, results: Collection<int, array{title: mixed, description: mixed, url: string}>}>
      */
     #[Computed]
     public function results(): Collection

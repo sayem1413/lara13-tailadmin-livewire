@@ -3,7 +3,10 @@
 namespace App\Services\User;
 
 use App\Models\User;
+use App\Notifications\UserRoleUpdatedNotification;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
+use App\Services\Notification\NotificationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +16,8 @@ use Illuminate\Validation\ValidationException;
 class UserService
 {
     public function __construct(
-        protected UserRepositoryInterface $userRepository
+        protected UserRepositoryInterface $userRepository,
+        protected NotificationService $notificationService
     ) {}
 
     /**
@@ -27,6 +31,18 @@ class UserService
         array $filters = []
     ): LengthAwarePaginator {
         return $this->userRepository->paginate($search, $perPage, $sort, $filters);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<User>
+     */
+    public function filteredQuery(
+        ?string $search = null,
+        string $sort = 'newest',
+        array $filters = []
+    ): Builder {
+        return $this->userRepository->filteredQuery($search, $sort, $filters);
     }
 
     /**
@@ -76,14 +92,29 @@ class UserService
         }
 
         return DB::transaction(function () use ($user, $data, $roles) {
+            $previousRoles = $user->getRoleNames()->all();
+
             $user = $this->userRepository->update($user, $data);
 
             if ($roles !== null) {
                 $user->syncRoles($roles);
             }
 
+            if ($roles !== null && $this->rolesChanged($previousRoles, $roles)) {
+                $this->notificationService->send($user, new UserRoleUpdatedNotification($user->getRoleNames()->all()));
+            }
+
             return $user;
         });
+    }
+
+    /**
+     * @param  array<int, string>  $before
+     * @param  array<int, string>  $after
+     */
+    protected function rolesChanged(array $before, array $after): bool
+    {
+        return array_diff($before, $after) !== [] || array_diff($after, $before) !== [];
     }
 
     /**

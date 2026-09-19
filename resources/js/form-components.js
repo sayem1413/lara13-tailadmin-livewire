@@ -141,6 +141,7 @@ export function initFormComponents(Alpine) {
     Alpine.data('fileUpload', ({ maxSizeMb, accept, preview }) => ({
         dragging: false,
         previewUrl: preview,
+        fileName: null,
         error: null,
 
         get hint() {
@@ -181,6 +182,14 @@ export function initFormComponents(Alpine) {
             if (file.size > maxSizeMb * 1024 * 1024) {
                 this.error = `File is too large. Maximum size is ${maxSizeMb}MB.`;
                 this.$refs.input.value = '';
+
+                return;
+            }
+
+            this.fileName = file.name;
+
+            if (!file.type.startsWith('image/')) {
+                this.previewUrl = null;
 
                 return;
             }

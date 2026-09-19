@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\NotificationPreferenceController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
@@ -62,7 +64,18 @@ Route::middleware(['auth', 'active', 'maintenance'])->name('admin.')->group(func
 
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
 
+    Route::resource('media', MediaController::class)->only(['index', 'destroy']);
+
     Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+    // Sits under the already-ignored "admin.notifications.*" wildcard in
+    // SyncPermissionsFromRoutes (the plain notifications index has no
+    // permission of its own), so this permission is seeded manually in
+    // RolesAndPermissionsSeeder instead of being auto-discovered.
+    Route::prefix('notifications/preferences')->name('notifications.preferences.')->controller(NotificationPreferenceController::class)->group(function () {
+        Route::get('/', 'edit')->name('edit');
+        Route::put('/', 'update')->name('update');
+    });
 
 });

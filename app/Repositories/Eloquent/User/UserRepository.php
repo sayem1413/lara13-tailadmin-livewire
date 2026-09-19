@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent\User;
 
 use App\Models\User;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserRepository implements UserRepositoryInterface
@@ -22,6 +23,20 @@ class UserRepository implements UserRepositoryInterface
         string $sort = 'newest',
         array $filters = []
     ): LengthAwarePaginator {
+        // Infinite-scroll (see UsersIndex::loadMore()) grows $perPage instead
+        // of advancing the page, so page is always pinned to 1.
+        return $this->filteredQuery($search, $sort, $filters)->paginate($perPage, page: 1);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<User>
+     */
+    public function filteredQuery(
+        ?string $search = null,
+        string $sort = 'newest',
+        array $filters = []
+    ): Builder {
         // applySearch()/applyFilters()/applySort() mutate the builder in
         // place and hand the same instance back - called here without
         // reassigning $query so it keeps its Builder<User> generic type
@@ -42,9 +57,16 @@ class UserRepository implements UserRepositoryInterface
 
         applySort($query, $sort, ['name', 'email']);
 
-        // Infinite-scroll (see UsersIndex::loadMore()) grows $perPage instead
-        // of advancing the page, so page is always pinned to 1.
-        return $query->paginate($perPage, page: 1);
+        // applySort()'s custom-column branch (used here for the fixed
+        // "name_asc" sort - see UsersIndex::users()) has no unique
+        // tie-breaker, which is fine for a single LIMIT/OFFSET page but
+        // unsafe for FromQuery's chunked export walk: two same-named users
+        // could each land in the wrong chunk boundary and one gets
+        // skipped, the other duplicated. An "id" tie-breaker fixes that
+        // for every consumer of this query, not just export.
+        $query->orderBy('id');
+
+        return $query;
     }
 
     public function findOrFail(int $id): User

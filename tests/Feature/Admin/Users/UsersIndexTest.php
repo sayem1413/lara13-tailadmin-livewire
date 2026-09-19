@@ -10,6 +10,52 @@ it('redirects a guest to the login page', function () {
     $this->get(route('admin.users.index'))->assertRedirect(route('login'));
 });
 
+it('forbids exporting without the admin.users.export permission', function () {
+    Permission::findOrCreate('admin.users.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.index');
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->call('export')
+        ->assertForbidden();
+});
+
+it('exports the current filtered list for a user with the admin.users.export permission', function () {
+    Permission::findOrCreate('admin.users.index');
+    Permission::findOrCreate('admin.users.export');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['admin.users.index', 'admin.users.export']);
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->call('export')
+        ->assertFileDownloaded();
+});
+
+it('forbids exporting a PDF without the admin.users.export permission', function () {
+    Permission::findOrCreate('admin.users.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.index');
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->call('exportPdf')
+        ->assertForbidden();
+});
+
+it('exports a PDF for a user with the admin.users.export permission', function () {
+    Permission::findOrCreate('admin.users.index');
+    Permission::findOrCreate('admin.users.export');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['admin.users.index', 'admin.users.export']);
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->call('exportPdf')
+        ->assertFileDownloaded();
+});
+
 it('forbids a user without the admin.users.index permission', function () {
     $user = User::factory()->create();
 

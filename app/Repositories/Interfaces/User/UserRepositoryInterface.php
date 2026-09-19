@@ -3,6 +3,7 @@
 namespace App\Repositories\Interfaces\User;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface UserRepositoryInterface
@@ -17,6 +18,19 @@ interface UserRepositoryInterface
         string $sort = 'newest',
         array $filters = []
     ): LengthAwarePaginator;
+
+    /**
+     * The same search/filter/sort query paginate() paginates, unpaginated -
+     * for exporting every matching row rather than just the current page.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Builder<User>
+     */
+    public function filteredQuery(
+        ?string $search = null,
+        string $sort = 'newest',
+        array $filters = []
+    ): Builder;
 
     public function findOrFail(int $id): User;
 

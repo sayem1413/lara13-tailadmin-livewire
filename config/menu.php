@@ -58,6 +58,19 @@ return [
     ],
 
     [
+        'group' => 'CONTENT',
+        'items' => [
+            [
+                'label' => 'Media Library',
+                'icon' => 'upload-cloud',
+                'route' => 'admin.media.index',
+                'permission' => 'admin.media.index',
+                'order' => 1,
+            ],
+        ],
+    ],
+
+    [
         'group' => 'SETTINGS',
         'items' => [
             [
@@ -66,6 +79,13 @@ return [
                 'route' => 'admin.settings.edit',
                 'permission' => 'admin.settings.edit',
                 'order' => 1,
+            ],
+            [
+                'label' => 'Notification Preferences',
+                'icon' => 'bell',
+                'route' => 'admin.notifications.preferences.edit',
+                'permission' => 'admin.notifications.preferences.edit',
+                'order' => 2,
             ],
         ],
     ],
