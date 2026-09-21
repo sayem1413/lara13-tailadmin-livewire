@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Admin\Notifications\NotificationPreferencesForm;
+use App\Models\NotificationPreference;
 use App\Models\Permission\Permission;
 use App\Models\User;
 use App\Services\Notification\NotificationService;
@@ -39,6 +40,46 @@ it('persists submitted preferences through the notification service', function (
         ->assertDispatched('toast', function (string $name, array $params) {
             return $params['type'] === 'success';
         });
+
+    expect(app(NotificationService::class)->channelsFor($actor, 'account_security'))
+        ->toBe(['database']);
+});
+
+it('ignores a type/channel pair injected outside the configured notification_types schema', function () {
+    Permission::findOrCreate('admin.notifications.preferences.edit');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.notifications.preferences.edit');
+
+    // Simulates a tampered Livewire request payload smuggling an extra key
+    // into the public $values property that was never part of the
+    // config-driven schema rendered to the actor.
+    Livewire::actingAs($actor)
+        ->test(NotificationPreferencesForm::class)
+        ->set('values.injected_type.injected_channel', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(NotificationPreference::where('type', 'injected_type')->exists())->toBeFalse();
+});
+
+it('strips an injected fake type/channel while still persisting a legitimate change in the same submission', function () {
+    Permission::findOrCreate('admin.notifications.preferences.edit');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.notifications.preferences.edit');
+
+    // rules() must be built from config('notification_types'), not from
+    // array_keys($this->values) - if it were derived from $this->values
+    // (the tamperable, client-hydrated property), the injected key below
+    // would pick up its own "boolean" rule from its own presence in
+    // $values and validate itself right alongside the legitimate change.
+    Livewire::actingAs($actor)
+        ->test(NotificationPreferencesForm::class)
+        ->set('values.account_security.mail', false)
+        ->set('values.injected_type.injected_channel', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(NotificationPreference::where('type', 'injected_type')->exists())->toBeFalse();
 
     expect(app(NotificationService::class)->channelsFor($actor, 'account_security'))
         ->toBe(['database']);

@@ -44,7 +44,18 @@ class MediaIndex extends Component
     protected function rules(): array
     {
         return [
-            'newFile' => ['required', 'file', 'max:10240'],
+            // extensions: checks the filename the user chose; mimetypes:
+            // content-sniffs the actual upload (see ImportModal for the
+            // same reasoning) so a script or executable renamed with an
+            // allowed extension is still rejected. Keep this allowlist in
+            // sync with MediaPicker's own upload rules.
+            'newFile' => [
+                'required',
+                'file',
+                'max:10240',
+                'extensions:jpg,jpeg,png,gif,webp,bmp,svg,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip',
+                'mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/x-ms-bmp,image/svg+xml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/csv,application/zip,application/x-zip-compressed',
+            ],
         ];
     }
 

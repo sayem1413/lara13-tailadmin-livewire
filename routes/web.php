@@ -58,6 +58,13 @@ Route::middleware(['auth', 'active', 'maintenance'])->name('admin.')->group(func
         'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
     ]);
 
+    // withTrashed() lets implicit route-model-binding resolve a soft-deleted
+    // {user} - without it, Laravel's default binding query excludes
+    // trashed rows and both routes would 404 before reaching the
+    // controller.
+    Route::put('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore')->withTrashed();
+    Route::delete('/users/{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete')->withTrashed();
+
     Route::resource('roles', RoleController::class)->only([
         'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
     ]);

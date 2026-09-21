@@ -39,6 +39,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'admin.users.create',
         'admin.users.edit',
         'admin.users.destroy',
+        'admin.users.restore',
+        'admin.users.force-delete',
         'admin.activity-log.index',
         'admin.settings.edit',
         'admin.settings.update',

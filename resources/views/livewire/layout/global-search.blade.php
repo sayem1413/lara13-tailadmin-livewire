@@ -12,20 +12,24 @@
 
     @if (mb_strlen(trim($query)) >= 2)
         <div x-show="open" x-cloak class="absolute z-40 mt-2 w-full rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-white/10 dark:bg-gray-800">
-            @forelse ($this->results as $group)
-                <p class="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">{{ $group['module'] }}</p>
+            {{-- Matches <livewire:layout.notifications-dropdown>'s max-h-80/overflow-y-auto: up to 5 modules x 5
+                 results each can render here, which is taller than most mobile viewports without this. --}}
+            <div class="max-h-80 overflow-y-auto">
+                @forelse ($this->results as $group)
+                    <p class="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">{{ $group['module'] }}</p>
 
-                @foreach ($group['results'] as $result)
-                    <a wire:key="search-result-{{ $result['url'] }}" href="{{ $result['url'] }}" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-white/5">
-                        <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ $result['title'] }}</p>
-                        @if ($result['description'])
-                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $result['description'] }}</p>
-                        @endif
-                    </a>
-                @endforeach
-            @empty
-                <p class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No results found.</p>
-            @endforelse
+                    @foreach ($group['results'] as $result)
+                        <a wire:key="search-result-{{ $result['url'] }}" href="{{ $result['url'] }}" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-white/5">
+                            <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ $result['title'] }}</p>
+                            @if ($result['description'])
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $result['description'] }}</p>
+                            @endif
+                        </a>
+                    @endforeach
+                @empty
+                    <p class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No results found.</p>
+                @endforelse
+            </div>
         </div>
     @endif
 </div>

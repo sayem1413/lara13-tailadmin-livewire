@@ -11,10 +11,21 @@
     <form wire:submit="save" class="max-w-3xl space-y-5">
         <x-forms.error for="role" />
 
-        <x-ui.card>
-            <x-forms.label for="name">Role Name</x-forms.label>
-            <x-forms.input type="text" icon="shield" id="name" wire:model="name" required />
-            <x-forms.error for="name" />
+        <x-ui.card class="space-y-5">
+            <div>
+                <x-forms.label for="name">Role Name</x-forms.label>
+                <x-forms.input type="text" icon="shield" id="name" wire:model="name" required />
+                <x-forms.error for="name" />
+            </div>
+
+            <div>
+                <x-forms.label for="description">Description</x-forms.label>
+                <x-forms.textarea id="description" wire:model="description" rows="3" />
+                <x-forms.error for="description" />
+            </div>
+
+            <x-forms.toggle wire:model="is_active" label="Active" />
+            <x-forms.error for="is_active" />
         </x-ui.card>
 
         @php $allPermissionNames = $permissionGroups->flatten()->pluck('name')->all(); @endphp
@@ -68,6 +79,7 @@
                 </table>
             </div>
             <x-forms.error for="selectedPermissions.*" />
+            <x-forms.error for="permissions" />
         </x-ui.card>
 
         <div class="flex items-center gap-3">

@@ -19,6 +19,7 @@ it('creates a role with the selected permissions', function () {
 
     $actor = User::factory()->create();
     $actor->givePermissionTo('admin.roles.create');
+    $actor->givePermissionTo('admin.users.index');
 
     Livewire::actingAs($actor)
         ->test(RoleForm::class)
@@ -53,6 +54,7 @@ it("updates an existing role's permissions", function () {
 
     $actor = User::factory()->create();
     $actor->givePermissionTo('admin.roles.edit');
+    $actor->givePermissionTo('admin.users.create');
 
     $role = Role::findOrCreate('Editor');
     $role->givePermissionTo('admin.users.index');
@@ -79,6 +81,13 @@ it("automatically grants a module's index permission when a write permission is 
 
     $actor = User::factory()->create();
     $actor->givePermissionTo('admin.roles.edit');
+    // The role-manager must hold both the write permission being assigned
+    // and its implied module-level view permission (see
+    // RoleService::guardAgainstUnassignablePermissions()) - expandPermissions()
+    // adds admin.users.index to the persisted set even though only
+    // admin.users.create is selected below.
+    $actor->givePermissionTo('admin.users.create');
+    $actor->givePermissionTo('admin.users.index');
 
     $role = Role::findOrCreate('Editor');
 
@@ -156,6 +165,96 @@ it('renders the global and per-module select-all checkboxes as checked once ever
 
     $component->set('selectedPermissions', $everyPermission);
     $component->assertSeeHtml('wire:click="toggleAllPermissions" checked="checked"');
+});
+
+it('saves description and is_active when creating a role', function () {
+    Permission::findOrCreate('admin.roles.create');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->set('name', 'Editor')
+        ->set('description', 'Edits published content')
+        ->set('is_active', false)
+        ->call('save')
+        ->assertRedirect(route('admin.roles.index'));
+
+    $role = Role::findByName('Editor');
+
+    expect($role->description)->toBe('Edits published content')
+        ->and($role->is_active)->toBeFalse();
+});
+
+it("updates an existing role's description and active status", function () {
+    Permission::findOrCreate('admin.roles.edit');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.edit');
+
+    $role = Role::findOrCreate('Editor');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class, ['role' => $role])
+        ->set('description', 'Updated description')
+        ->set('is_active', false)
+        ->call('save');
+
+    $role->refresh();
+
+    expect($role->description)->toBe('Updated description')
+        ->and($role->is_active)->toBeFalse();
+});
+
+it('prefills the description and active status when editing an existing role', function () {
+    Permission::findOrCreate('admin.roles.edit');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.edit');
+
+    $role = Role::findOrCreate('Editor');
+    $role->update(['description' => 'Pre-existing description', 'is_active' => false]);
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class, ['role' => $role])
+        ->assertSet('description', 'Pre-existing description')
+        ->assertSet('is_active', false);
+});
+
+it('blocks assigning a permission the actor does not currently hold, even via the Livewire form', function () {
+    Permission::findOrCreate('admin.roles.create');
+    Permission::findOrCreate('admin.settings.edit');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->set('name', 'Escalated Role')
+        ->set('selectedPermissions', ['admin.settings.edit'])
+        ->call('save')
+        ->assertHasErrors('permissions');
+
+    expect(Role::where('name', 'Escalated Role')->exists())->toBeFalse();
+});
+
+it('allows assigning a permission the actor currently holds via the Livewire form', function () {
+    Permission::findOrCreate('admin.roles.create');
+    Permission::findOrCreate('admin.users.index');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+    $actor->givePermissionTo('admin.users.index');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->set('name', 'Safe Role')
+        ->set('selectedPermissions', ['admin.users.index'])
+        ->call('save')
+        ->assertRedirect(route('admin.roles.index'));
+
+    expect(Role::findByName('Safe Role')->hasPermissionTo('admin.users.index'))->toBeTrue();
 });
 
 it('forbids opening the edit form for the Super Admin role even for a Super Admin actor', function () {

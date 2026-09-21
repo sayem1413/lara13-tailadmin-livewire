@@ -46,7 +46,14 @@
                 </x-forms.select>
             </div>
 
-            @if (! empty($selected))
+            <div class="w-40">
+                <x-forms.select wire:model.live="trashed">
+                    <option value="">Active users</option>
+                    <option value="only">Trashed users</option>
+                </x-forms.select>
+            </div>
+
+            @if (! empty($selected) && $trashed === '')
                 <div class="ml-auto flex items-center gap-2">
                     <span class="text-sm text-gray-500 dark:text-gray-400">{{ count($selected) }} selected</span>
                     <x-ui.button
@@ -111,26 +118,46 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-3 text-sm">
-                                    @can('update', $user)
-                                        @if ($user->id !== auth()->id())
-                                            <button type="button" wire:click="toggleActive({{ $user->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
-                                                {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                    @if ($trashed === 'only')
+                                        @can('restore', $user)
+                                            <button type="button" wire:click="restoreUser({{ $user->id }})" class="font-medium text-brand-600 hover:underline dark:text-brand-400">
+                                                Restore
                                             </button>
-                                        @endif
-                                        <a href="{{ route('admin.users.edit', $user) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
-                                    @endcan
-                                    @can('delete', $user)
-                                        <button
-                                            type="button"
-                                            wire:click="delete({{ $user->id }})"
-                                            data-confirm="delete"
-                                            data-confirm-entity="User"
-                                            data-confirm-name="{{ $user->name }}"
-                                            class="font-medium text-red-600 hover:underline dark:text-red-400"
-                                        >
-                                            Delete
-                                        </button>
-                                    @endcan
+                                        @endcan
+                                        @can('forceDelete', $user)
+                                            <button
+                                                type="button"
+                                                wire:click="forceDeleteUser({{ $user->id }})"
+                                                data-confirm="force-delete"
+                                                data-confirm-entity="User"
+                                                data-confirm-name="{{ $user->name }}"
+                                                class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                            >
+                                                Force Delete
+                                            </button>
+                                        @endcan
+                                    @else
+                                        @can('update', $user)
+                                            @if ($user->id !== auth()->id())
+                                                <button type="button" wire:click="toggleActive({{ $user->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                                                    {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                                </button>
+                                            @endif
+                                            <a href="{{ route('admin.users.edit', $user) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
+                                        @endcan
+                                        @can('delete', $user)
+                                            <button
+                                                type="button"
+                                                wire:click="delete({{ $user->id }})"
+                                                data-confirm="delete"
+                                                data-confirm-entity="User"
+                                                data-confirm-name="{{ $user->name }}"
+                                                class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                            >
+                                                Delete
+                                            </button>
+                                        @endcan
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -171,26 +198,46 @@
                         </div>
 
                         <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
-                            @can('update', $user)
-                                @if ($user->id !== auth()->id())
-                                    <button type="button" wire:click="toggleActive({{ $user->id }})" class="min-h-11 font-medium text-gray-600 dark:text-gray-300">
-                                        {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                            @if ($trashed === 'only')
+                                @can('restore', $user)
+                                    <button type="button" wire:click="restoreUser({{ $user->id }})" class="min-h-11 font-medium text-brand-600 dark:text-brand-400">
+                                        Restore
                                     </button>
-                                @endif
-                                <a href="{{ route('admin.users.edit', $user) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
-                            @endcan
-                            @can('delete', $user)
-                                <button
-                                    type="button"
-                                    wire:click="delete({{ $user->id }})"
-                                    data-confirm="delete"
-                                    data-confirm-entity="User"
-                                    data-confirm-name="{{ $user->name }}"
-                                    class="min-h-11 font-medium text-red-600 dark:text-red-400"
-                                >
-                                    Delete
-                                </button>
-                            @endcan
+                                @endcan
+                                @can('forceDelete', $user)
+                                    <button
+                                        type="button"
+                                        wire:click="forceDeleteUser({{ $user->id }})"
+                                        data-confirm="force-delete"
+                                        data-confirm-entity="User"
+                                        data-confirm-name="{{ $user->name }}"
+                                        class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                                    >
+                                        Force Delete
+                                    </button>
+                                @endcan
+                            @else
+                                @can('update', $user)
+                                    @if ($user->id !== auth()->id())
+                                        <button type="button" wire:click="toggleActive({{ $user->id }})" class="min-h-11 font-medium text-gray-600 dark:text-gray-300">
+                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
+                                    @endif
+                                    <a href="{{ route('admin.users.edit', $user) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
+                                @endcan
+                                @can('delete', $user)
+                                    <button
+                                        type="button"
+                                        wire:click="delete({{ $user->id }})"
+                                        data-confirm="delete"
+                                        data-confirm-entity="User"
+                                        data-confirm-name="{{ $user->name }}"
+                                        class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                                    >
+                                        Delete
+                                    </button>
+                                @endcan
+                            @endif
                         </div>
                     </div>
                 </div>

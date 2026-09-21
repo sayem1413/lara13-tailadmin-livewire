@@ -19,6 +19,15 @@ class ActivityLogService
      */
     public function paginate(?string $search = null, int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
+        // $search is bound straight into a LIKE '%...%' (plus an
+        // orWhereHasMorph against the causer's name) with no length limit
+        // of its own - see ActivityLogRepository::paginate(). Clamping it
+        // here keeps that query bounded regardless of what a tampered
+        // request sends, without changing behavior for any real search.
+        if ($search !== null) {
+            $search = mb_substr($search, 0, 255);
+        }
+
         return $this->activityLogRepository->paginate($search, $perPage, $filters);
     }
 

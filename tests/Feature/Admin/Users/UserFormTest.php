@@ -67,6 +67,27 @@ it('rejects a duplicate email', function () {
         ->assertHasErrors('email');
 });
 
+it('allows reusing the email of a soft-deleted user when creating a new one', function () {
+    Permission::findOrCreate('admin.users.create');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.create');
+
+    $trashed = User::factory()->create(['email' => 'reused@example.com']);
+    $trashed->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UserForm::class)
+        ->set('name', 'New Person')
+        ->set('email', 'reused@example.com')
+        ->set('password', 'a-secure-password')
+        ->set('password_confirmation', 'a-secure-password')
+        ->call('save')
+        ->assertRedirect(route('admin.users.index'));
+
+    expect(User::where('email', 'reused@example.com')->count())->toBe(1)
+        ->and(User::withTrashed()->where('email', 'reused@example.com')->count())->toBe(2);
+});
+
 it('updates an existing user without changing the password when left blank', function () {
     Permission::findOrCreate('admin.users.edit');
     $actor = User::factory()->create();

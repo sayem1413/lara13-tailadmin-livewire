@@ -71,6 +71,12 @@ class ImportModal extends Component
             'file' => [
                 'required',
                 'file',
+                // Matches the 5MB hint shown by the dropzone
+                // (<x-forms.file-upload :max-size-mb="5" />). Without this,
+                // only Livewire's own blanket temporary-upload cap
+                // (config('livewire.temporary_file_upload.rules'), 12MB by
+                // default) would apply server-side.
+                'max:5120',
                 'extensions:xlsx,xls,csv',
                 'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ],

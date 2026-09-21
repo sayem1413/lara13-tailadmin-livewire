@@ -15,33 +15,43 @@ class UserRepository implements UserRepositoryInterface
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  string|null  $trashed  'only' for soft-deleted rows only, 'with'
+     *                                for both, anything else excludes them -
+     *                                see applyTrashedFilter() in helpers.php.
      * @return LengthAwarePaginator<int, User>
      */
     public function paginate(
         ?string $search = null,
         int $perPage = 10,
         string $sort = 'newest',
-        array $filters = []
+        array $filters = [],
+        ?string $trashed = null
     ): LengthAwarePaginator {
         // Infinite-scroll (see UsersIndex::loadMore()) grows $perPage instead
         // of advancing the page, so page is always pinned to 1.
-        return $this->filteredQuery($search, $sort, $filters)->paginate($perPage, page: 1);
+        return $this->filteredQuery($search, $sort, $filters, $trashed)->paginate($perPage, page: 1);
     }
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  string|null  $trashed  'only' for soft-deleted rows only, 'with'
+     *                                for both, anything else excludes them -
+     *                                see applyTrashedFilter() in helpers.php.
      * @return Builder<User>
      */
     public function filteredQuery(
         ?string $search = null,
         string $sort = 'newest',
-        array $filters = []
+        array $filters = [],
+        ?string $trashed = null
     ): Builder {
         // applySearch()/applyFilters()/applySort() mutate the builder in
         // place and hand the same instance back - called here without
         // reassigning $query so it keeps its Builder<User> generic type
         // instead of widening to the helpers' unparameterized Builder.
         $query = $this->model->query()->with('roles');
+
+        applyTrashedFilter($query, $trashed);
 
         applySearch($query, $search, ['name', 'email']);
 
@@ -69,9 +79,11 @@ class UserRepository implements UserRepositoryInterface
         return $query;
     }
 
-    public function findOrFail(int $id): User
+    public function findOrFail(int $id, bool $withTrashed = false): User
     {
-        return $this->model->findOrFail($id);
+        $query = $withTrashed ? $this->model->newQuery()->withTrashed() : $this->model->query();
+
+        return $query->findOrFail($id);
     }
 
     /**
@@ -95,6 +107,18 @@ class UserRepository implements UserRepositoryInterface
     public function delete(User $user): bool
     {
         return (bool) $user->delete();
+    }
+
+    public function restore(User $user): User
+    {
+        $user->restore();
+
+        return $user->refresh();
+    }
+
+    public function forceDelete(User $user): bool
+    {
+        return (bool) $user->forceDelete();
     }
 
     /**

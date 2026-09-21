@@ -131,3 +131,18 @@ it('filters activity by search term matching the description or causer name', fu
         ->assertSee('Matches by description')
         ->assertDontSee('Unrelated entry');
 });
+
+it('does not error when the search term is far longer than any real description', function () {
+    Permission::findOrCreate('admin.activity-log.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.activity-log.index');
+    $subject = User::factory()->create();
+
+    Activity::performedOn($subject)->causedBy($actor)->log('Ordinary description');
+
+    Livewire::actingAs($actor)
+        ->test(ActivityLogIndex::class)
+        ->set('search', str_repeat('a', 5000))
+        ->assertOk()
+        ->assertDontSee('Ordinary description');
+});

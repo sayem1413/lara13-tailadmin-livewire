@@ -192,6 +192,93 @@ it('does not render the select-all-on-page checkbox as checked while some rows a
     $component->assertDontSeeHtml('wire:click="toggleSelectAllOnPage" checked="checked"');
 });
 
+it('shows only trashed users when the trashed filter is set to "only"', function () {
+    $actor = User::factory()->create();
+    $active = User::factory()->create(['name' => 'Still Active']);
+    $trashed = User::factory()->create(['name' => 'Gone User']);
+    $trashed->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('trashed', 'only')
+        ->assertSee('Gone User')
+        ->assertDontSee('Still Active');
+});
+
+it('shows only non-trashed users by default', function () {
+    $actor = User::factory()->create();
+    $active = User::factory()->create(['name' => 'Still Active']);
+    $trashed = User::factory()->create(['name' => 'Gone User']);
+    $trashed->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->assertSee('Still Active')
+        ->assertDontSee('Gone User');
+});
+
+it('restores a trashed user with the admin.users.restore permission', function () {
+    Permission::findOrCreate('admin.users.restore');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.restore');
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('trashed', 'only')
+        ->call('restoreUser', $target->id);
+
+    expect($target->fresh()->trashed())->toBeFalse();
+});
+
+it('forbids restoring a trashed user without the admin.users.restore permission', function () {
+    $actor = User::factory()->create();
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('trashed', 'only')
+        ->call('restoreUser', $target->id)
+        ->assertForbidden();
+
+    expect(User::withTrashed()->findOrFail($target->id)->trashed())->toBeTrue();
+});
+
+it('permanently deletes a trashed user with the admin.users.force-delete permission', function () {
+    Permission::findOrCreate('admin.users.force-delete');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.force-delete');
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('trashed', 'only')
+        ->call('forceDeleteUser', $target->id);
+
+    expect(User::withTrashed()->find($target->id))->toBeNull();
+});
+
+it('forbids force-deleting a trashed user without the admin.users.force-delete permission', function () {
+    $actor = User::factory()->create();
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    Livewire::actingAs($actor)
+        ->test(UsersIndex::class)
+        ->set('trashed', 'only')
+        ->call('forceDeleteUser', $target->id)
+        ->assertForbidden();
+
+    expect(User::withTrashed()->find($target->id))->not->toBeNull();
+});
+
 it('only activates the users the actor is allowed to update in a bulk action', function () {
     Permission::findOrCreate('admin.users.edit');
     Role::findOrCreate('Super Admin');

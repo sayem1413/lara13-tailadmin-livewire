@@ -54,7 +54,11 @@ class UserForm extends Component
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required', 'string', 'email', 'max:255',
-                Rule::unique('users', 'email')->ignore($this->userId),
+                // withoutTrashed(): a soft-deleted user's email is reusable
+                // by someone else - see StoreUserRequest/UpdateUserRequest,
+                // which apply the same rule for the resource-controller
+                // equivalent of this form.
+                Rule::unique('users', 'email')->ignore($this->userId)->withoutTrashed(),
             ],
             'password' => [$this->userId ? 'nullable' : 'required', 'confirmed', Password::default()],
             'is_active' => ['boolean'],

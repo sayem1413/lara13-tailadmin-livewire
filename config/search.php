@@ -26,7 +26,7 @@ return [
             'columns' => ['name', 'email'],
             'title' => 'name',
             'description' => 'email',
-            'route' => 'admin.users.edit',
+            'route' => 'admin.users.show',
             'route_param' => 'user',
             'permission' => 'admin.users.index',
         ],

@@ -23,6 +23,13 @@ const presets = {
         confirmButtonText: 'Deactivate',
         confirmButtonColor: '#d92d20',
     },
+    'force-delete': {
+        title: 'Permanently delete {subject}?',
+        text: 'This cannot be undone. All of their data will be permanently removed.',
+        icon: 'error',
+        confirmButtonText: 'Permanently delete',
+        confirmButtonColor: '#d92d20',
+    },
     'bulk-activate': {
         title: 'Activate {count} {entityPlural}?',
         icon: 'question',

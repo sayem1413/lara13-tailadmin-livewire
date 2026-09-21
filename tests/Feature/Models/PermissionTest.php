@@ -1,6 +1,43 @@
 <?php
 
 use App\Models\Permission\Permission;
+use Spatie\Activitylog\Models\Activity;
+
+it('logs the configured fields when a permission is created', function () {
+    $permission = Permission::create([
+        'name' => 'admin.widgets.index',
+        'guard_name' => 'web',
+        'module' => 'widgets',
+        'section' => 'index',
+        'description' => 'View widgets',
+    ]);
+
+    $activity = Activity::query()->latest('id')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity->subject_id)->toBe($permission->id)
+        ->and($activity->subject_type)->toBe(Permission::class)
+        ->and($activity->event)->toBe('created')
+        ->and($activity->attribute_changes['attributes'])->toBe([
+            'name' => 'admin.widgets.index',
+            'guard_name' => 'web',
+            'module' => 'widgets',
+            'section' => 'index',
+            'description' => 'View widgets',
+        ]);
+});
+
+it('logs only the dirty configured fields when a permission is updated', function () {
+    $permission = Permission::create(['name' => 'admin.widgets.index', 'guard_name' => 'web']);
+
+    $permission->update(['description' => 'View all widgets']);
+
+    $activity = Activity::query()->latest('id')->first();
+
+    expect($activity->event)->toBe('updated')
+        ->and($activity->attribute_changes['attributes'])->toBe(['description' => 'View all widgets'])
+        ->and($activity->attribute_changes['old'])->toBe(['description' => null]);
+});
 
 it('expands nothing when no permissions are selected', function () {
     expect(Permission::expandWithImplied([]))->toBe([]);

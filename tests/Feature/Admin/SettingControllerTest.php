@@ -33,3 +33,17 @@ it('persists submitted values through the setting service', function () {
         ->and($settings->get('support_email'))->toBe('support@example.com')
         ->and($settings->get('maintenance_mode'))->toBeTrue();
 });
+
+it('rejects a blank app_name and leaves the currently saved value untouched', function () {
+    Permission::findOrCreate('admin.settings.update');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.settings.update');
+
+    app(SettingService::class)->set('app_name', 'Existing Name');
+
+    $this->actingAs($actor)
+        ->put(route('admin.settings.update'), ['values' => ['app_name' => '']])
+        ->assertSessionHasErrors('values.app_name');
+
+    expect(app(SettingService::class)->get('app_name'))->toBe('Existing Name');
+});

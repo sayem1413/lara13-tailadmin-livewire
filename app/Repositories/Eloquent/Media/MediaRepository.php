@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\Media\MediaRepositoryInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class MediaRepository implements MediaRepositoryInterface
 {
@@ -40,11 +41,37 @@ class MediaRepository implements MediaRepositoryInterface
 
     public function createFromUpload(UploadedFile $file, ?int $uploadedBy): LibraryAsset
     {
-        $asset = $this->model->create(['uploaded_by' => $uploadedBy]);
+        // Without a transaction, a failure partway through addMedia() (disk
+        // full, disallowed extension, etc.) would leave the library_assets
+        // row committed with no file attached to it.
+        return DB::transaction(function () use ($file, $uploadedBy) {
+            $asset = $this->model->create(['uploaded_by' => $uploadedBy]);
 
-        $asset->addMedia($file)->toMediaCollection('file');
+            $asset->addMedia($file)->toMediaCollection('file');
 
-        return $asset->refresh();
+            return $asset->refresh();
+        });
+    }
+
+    public function createFromString(string $contents, string $filename, ?int $uploadedBy): LibraryAsset
+    {
+        // Same reasoning as createFromUpload(): wrap the create + attach in
+        // a transaction so a failure partway through addMediaFromString()
+        // can't leave a library_assets row with no file attached to it.
+        return DB::transaction(function () use ($contents, $filename, $uploadedBy) {
+            $asset = $this->model->create(['uploaded_by' => $uploadedBy]);
+
+            // addMediaFromString() defaults both the file name and the
+            // media's display name off its own temp file path, so both
+            // need to be overridden with the original upload's name -
+            // same as spatie's own addMediaFromUrl() does internally.
+            $asset->addMediaFromString($contents)
+                ->usingName(pathinfo($filename, PATHINFO_FILENAME))
+                ->usingFileName($filename)
+                ->toMediaCollection('file');
+
+            return $asset->refresh();
+        });
     }
 
     public function delete(LibraryAsset $asset): bool

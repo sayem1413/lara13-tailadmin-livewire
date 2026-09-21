@@ -22,14 +22,20 @@ class NotificationPreferencesForm extends Component
     }
 
     /**
+     * Built from config/notification_types.php rather than array_keys($this->values)
+     * - $values is a public property Livewire hydrates from client-supplied
+     * request data on every request, so deriving the allowed keys from it
+     * would let a tampered payload validate its own injected type/channel
+     * keys instead of being restricted to the real schema.
+     *
      * @return array<string, array<int, string>>
      */
     protected function rules(): array
     {
         $rules = [];
 
-        foreach (array_keys($this->values) as $type) {
-            foreach (array_keys($this->values[$type]) as $channel) {
+        foreach (config('notification_types', []) as $type => $definition) {
+            foreach (array_keys($definition['channels']) as $channel) {
                 $rules["values.{$type}.{$channel}"] = ['boolean'];
             }
         }
@@ -43,7 +49,7 @@ class NotificationPreferencesForm extends Component
 
         $validated = $this->validate();
 
-        $notifications->updatePreferences(auth()->user(), $validated['values']);
+        $notifications->updatePreferences(auth()->user(), $validated['values'] ?? []);
 
         $this->dispatch('toast', type: 'success', message: 'Notification preferences updated.');
     }

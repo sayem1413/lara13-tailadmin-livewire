@@ -21,6 +21,10 @@ class RoleForm extends Component
 
     public string $name = '';
 
+    public ?string $description = null;
+
+    public bool $is_active = true;
+
     /** @var array<int, string> */
     public array $selectedPermissions = [];
 
@@ -32,6 +36,8 @@ class RoleForm extends Component
 
             $this->roleId = (int) $role->id;
             $this->name = $role->name;
+            $this->description = $role->description;
+            $this->is_active = $role->is_active;
             $this->selectedPermissions = $role->permissions->pluck('name')->all();
         } else {
             Gate::authorize('create', Role::class);
@@ -45,6 +51,8 @@ class RoleForm extends Component
     {
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($this->roleId)],
+            'description' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['boolean'],
             'selectedPermissions' => ['array'],
             'selectedPermissions.*' => ['string', Rule::exists('permissions', 'name')],
         ];
@@ -60,6 +68,8 @@ class RoleForm extends Component
 
         $data = [
             'name' => $validated['name'],
+            'description' => $validated['description'],
+            'is_active' => $validated['is_active'],
             'permissions' => $validated['selectedPermissions'],
         ];
 

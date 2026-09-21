@@ -26,7 +26,11 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required', 'string', 'email', 'max:255',
-                Rule::unique('users', 'email')->ignore($this->route('user')),
+                // withoutTrashed(): a trashed user's email is reusable by
+                // someone else (see StoreUserRequest) - without it, this
+                // ignore() would still block a different user's email
+                // change onto an address a soft-deleted row still holds.
+                Rule::unique('users', 'email')->ignore($this->route('user'))->withoutTrashed(),
             ],
             'password' => ['nullable', 'confirmed', Password::default()],
             'is_active' => ['boolean'],

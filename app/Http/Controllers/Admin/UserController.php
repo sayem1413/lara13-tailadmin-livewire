@@ -71,4 +71,22 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
+
+    public function restore(User $user): RedirectResponse
+    {
+        Gate::authorize('restore', $user);
+
+        $this->userService->restoreUser($user);
+
+        return redirect()->route('admin.users.index')->with('success', 'User restored successfully.');
+    }
+
+    public function forceDelete(User $user): RedirectResponse
+    {
+        Gate::authorize('forceDelete', $user);
+
+        $this->userService->forceDeleteUser($user);
+
+        return redirect()->route('admin.users.index')->with('success', 'User permanently deleted.');
+    }
 }

@@ -23,6 +23,8 @@
             <x-slot:head>
                 <tr>
                     <th class="px-4 py-3 font-medium">Name</th>
+                    <th class="px-4 py-3 font-medium">Description</th>
+                    <th class="px-4 py-3 font-medium">Status</th>
                     <th class="px-4 py-3 font-medium">Permissions</th>
                     <th class="px-4 py-3 font-medium">Users</th>
                     <th class="px-4 py-3 font-medium">&nbsp;</th>
@@ -33,6 +35,14 @@
                 @forelse ($roles as $role)
                         <tr wire:key="role-{{ $role->id }}">
                             <td class="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $role->description ?: '—' }}</td>
+                            <td class="px-4 py-3">
+                                @if ($role->is_active)
+                                    <x-ui.badge color="green">Active</x-ui.badge>
+                                @else
+                                    <x-ui.badge color="red">Inactive</x-ui.badge>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $role->permissions_count }}</td>
                             <td class="px-4 py-3">
                                 <a
@@ -64,7 +74,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No roles found.
                             </td>
                         </tr>
@@ -78,6 +88,18 @@
                     <div class="flex items-start justify-between gap-2">
                         <p class="font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</p>
                         <span class="text-xs text-gray-500 dark:text-gray-400">{{ $role->permissions_count }} {{ Str::plural('permission', $role->permissions_count) }}</span>
+                    </div>
+
+                    @if ($role->description)
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $role->description }}</p>
+                    @endif
+
+                    <div class="mt-2">
+                        @if ($role->is_active)
+                            <x-ui.badge color="green">Active</x-ui.badge>
+                        @else
+                            <x-ui.badge color="red">Inactive</x-ui.badge>
+                        @endif
                     </div>
 
                     <a

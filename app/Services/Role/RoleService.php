@@ -6,6 +6,7 @@ use App\Models\Permission\Role;
 use App\Repositories\Interfaces\Permission\PermissionRepositoryInterface;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -29,12 +30,14 @@ class RoleService
      */
     public function createRole(array $data): Role
     {
-        $permissions = $data['permissions'] ?? [];
+        $permissions = $this->expandPermissions($data['permissions'] ?? []);
+
+        $this->guardAgainstUnassignablePermissions($permissions);
 
         return DB::transaction(function () use ($data, $permissions) {
-            $role = $this->roleRepository->create(['name' => $data['name']]);
+            $role = $this->roleRepository->create(Arr::only($data, ['name', 'description', 'is_active']));
 
-            $role->syncPermissions($this->expandPermissions($permissions));
+            $role->syncPermissions($permissions);
 
             return $role;
         });
@@ -49,11 +52,17 @@ class RoleService
 
         $permissions = $data['permissions'] ?? null;
 
+        if ($permissions !== null) {
+            $permissions = $this->expandPermissions($permissions);
+
+            $this->guardAgainstUnassignablePermissions($permissions);
+        }
+
         return DB::transaction(function () use ($role, $data, $permissions) {
-            $role = $this->roleRepository->update($role, ['name' => $data['name']]);
+            $role = $this->roleRepository->update($role, Arr::only($data, ['name', 'description', 'is_active']));
 
             if ($permissions !== null) {
-                $role->syncPermissions($this->expandPermissions($permissions));
+                $role->syncPermissions($permissions);
             }
 
             return $role;
@@ -105,6 +114,40 @@ class RoleService
         if ($role->name === 'Super Admin') {
             throw ValidationException::withMessages([
                 'role' => "The Super Admin role cannot be {$action}.",
+            ]);
+        }
+    }
+
+    /**
+     * A role-manager (anyone holding admin.roles.create/admin.roles.edit)
+     * could otherwise build a role carrying ANY permission in the system -
+     * including ones they don't personally hold - then self-assign that
+     * role via Users to escalate their own access. Every permission being
+     * attached to a role must therefore already be one the acting user
+     * holds themselves, the same way StoreUserRequest/UpdateUserRequest
+     * only check a submitted role *exists*, not who's allowed to grant it,
+     * which is why UserService::guardAgainstUnassignableSuperAdminRole()
+     * exists - this is that same guard, one layer up, for permissions
+     * instead of the single Super Admin role.
+     *
+     * Super Admin bypasses this (mirrors
+     * UserService::guardAgainstUnassignableSuperAdminRole()'s own check):
+     * it already holds every permission via Gate::before, so re-deriving
+     * that from hasPermissionTo() checks here would be redundant.
+     *
+     * @param  array<int, string>  $names
+     */
+    protected function guardAgainstUnassignablePermissions(array $names): void
+    {
+        if (auth()->user()?->hasRole('Super Admin')) {
+            return;
+        }
+
+        $unassignable = collect($names)->reject(fn (string $name) => (bool) auth()->user()?->can($name));
+
+        if ($unassignable->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'permissions' => 'You can only assign permissions you currently hold.',
             ]);
         }
     }

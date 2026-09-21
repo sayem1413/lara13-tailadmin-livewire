@@ -33,6 +33,19 @@ it('lists roles with their permission and user counts', function () {
         ->assertSee('1 user');
 });
 
+it('shows a role\'s description and an inactive status badge', function () {
+    Permission::findOrCreate('admin.roles.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.index');
+
+    Role::findOrCreate('Editor')->update(['description' => 'Edits published content', 'is_active' => false]);
+
+    $this->actingAs($actor)->get(route('admin.roles.index'))
+        ->assertOk()
+        ->assertSee('Edits published content')
+        ->assertSee('Inactive');
+});
+
 it('deletes a role with no users assigned', function () {
     Permission::findOrCreate('admin.roles.destroy');
     $actor = User::factory()->create();

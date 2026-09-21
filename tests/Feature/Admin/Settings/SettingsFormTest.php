@@ -61,3 +61,20 @@ it('persists submitted values through the setting service', function () {
         ->and($settings->get('support_email'))->toBe('support@example.com')
         ->and($settings->get('maintenance_mode'))->toBeTrue();
 });
+
+it('rejects a blank app_name and leaves the currently saved value untouched', function () {
+    Permission::findOrCreate('admin.settings.edit');
+    Permission::findOrCreate('admin.settings.update');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo(['admin.settings.edit', 'admin.settings.update']);
+
+    app(SettingService::class)->set('app_name', 'Existing Name');
+
+    Livewire::actingAs($actor)
+        ->test(SettingsForm::class)
+        ->set('values.app_name', '')
+        ->call('save')
+        ->assertHasErrors(['values.app_name' => 'required']);
+
+    expect(app(SettingService::class)->get('app_name'))->toBe('Existing Name');
+});

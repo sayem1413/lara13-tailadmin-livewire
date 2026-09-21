@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notification;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class NotificationService
 {
@@ -35,7 +37,21 @@ class NotificationService
             return;
         }
 
-        $user->notify($notification->withChannels($channels));
+        // Callers (e.g. UserService::updateUser()) may dispatch this from
+        // inside their own DB::transaction() around the action the
+        // notification is about. A failed channel (mail server down, etc.)
+        // must not roll back that unrelated business change, so the
+        // failure is swallowed here rather than left to propagate - but
+        // it's logged since it would otherwise fail completely silently.
+        try {
+            $user->notify($notification->withChannels($channels));
+        } catch (Throwable $e) {
+            Log::error('Failed to dispatch notification.', [
+                'notification' => $notification::class,
+                'user_id' => $user->id,
+                'exception' => $e,
+            ]);
+        }
     }
 
     /**

@@ -47,7 +47,26 @@ class GenericExport implements FromQuery, WithHeadings, WithMapping
     public function map($row): array
     {
         return collect(array_keys($this->columns))
-            ->map(fn (string $key) => data_get($row, $key))
+            ->map(fn (string $key) => $this->escapeFormula(data_get($row, $key)))
             ->all();
+    }
+
+    /**
+     * Neutralizes CSV/Excel formula injection: Excel and Google Sheets treat
+     * a cell starting with =, +, -, or @ as a formula when the file is
+     * opened, so exporting unescaped user-controlled data (e.g. a user's
+     * name) could execute arbitrary formulas/commands for whoever opens the
+     * export. Prefixing such a value with a leading apostrophe forces
+     * spreadsheet apps to read it as plain text - the apostrophe stays
+     * visible in the cell, an accepted trade-off for closing the injection
+     * vector.
+     */
+    protected function escapeFormula(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        return preg_match('/^[=+\-@]/', $value) === 1 ? "'{$value}" : $value;
     }
 }

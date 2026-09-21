@@ -200,3 +200,127 @@ it('shows a user to an actor with the admin.users.index permission', function ()
         ->get(route('admin.users.show', $target))
         ->assertOk();
 });
+
+it('forbids restoring a user without the admin.users.restore permission', function () {
+    $actor = User::factory()->create();
+    $target = User::factory()->create();
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.restore', $target))
+        ->assertForbidden();
+
+    expect($target->fresh()->trashed())->toBeTrue();
+});
+
+it('restores a soft-deleted user with the admin.users.restore permission', function () {
+    Permission::findOrCreate('admin.users.restore');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.restore');
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.restore', $target))
+        ->assertRedirect(route('admin.users.index'));
+
+    expect($target->fresh()->trashed())->toBeFalse();
+});
+
+it("forbids restoring a Super Admin's account without the Super Admin role", function () {
+    Permission::findOrCreate('admin.users.restore');
+    Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.restore');
+
+    $target = User::factory()->create();
+    $target->assignRole('Super Admin');
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->put(route('admin.users.restore', $target))
+        ->assertForbidden();
+
+    expect(User::withTrashed()->findOrFail($target->id)->trashed())->toBeTrue();
+});
+
+it('forbids force-deleting a user without the admin.users.force-delete permission', function () {
+    $actor = User::factory()->create();
+    $target = User::factory()->create();
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.force-delete', $target))
+        ->assertForbidden();
+
+    expect(User::withTrashed()->find($target->id))->not->toBeNull();
+});
+
+it('permanently deletes a user with the admin.users.force-delete permission', function () {
+    Permission::findOrCreate('admin.users.force-delete');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.force-delete');
+
+    $target = User::factory()->create();
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.force-delete', $target))
+        ->assertRedirect(route('admin.users.index'));
+
+    expect(User::withTrashed()->find($target->id))->toBeNull();
+});
+
+it('prevents an actor from force-deleting their own account', function () {
+    Permission::findOrCreate('admin.users.force-delete');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.force-delete');
+    $actor->delete();
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.force-delete', $actor))
+        ->assertForbidden();
+
+    expect(User::withTrashed()->find($actor->id))->not->toBeNull();
+});
+
+it("forbids force-deleting a Super Admin's account without the Super Admin role", function () {
+    Permission::findOrCreate('admin.users.force-delete');
+    Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.force-delete');
+
+    $target = User::factory()->create();
+    $target->assignRole('Super Admin');
+    $target->delete();
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.force-delete', $target))
+        ->assertForbidden();
+
+    expect(User::withTrashed()->find($target->id))->not->toBeNull();
+});
+
+it('allows creating a new user with the email address of a soft-deleted user', function () {
+    Permission::findOrCreate('admin.users.create');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.users.create');
+
+    $trashed = User::factory()->create(['email' => 'reused@example.com']);
+    $trashed->delete();
+
+    $this->actingAs($actor)
+        ->post(route('admin.users.store'), [
+            'name' => 'New Person',
+            'email' => 'reused@example.com',
+            'password' => 'a-secure-password',
+            'password_confirmation' => 'a-secure-password',
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    expect(User::where('email', 'reused@example.com')->count())->toBe(1)
+        ->and(User::withTrashed()->where('email', 'reused@example.com')->count())->toBe(2);
+});

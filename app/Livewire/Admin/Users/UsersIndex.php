@@ -30,6 +30,13 @@ class UsersIndex extends Component
     #[Url]
     public string $status = '';
 
+    /**
+     * '' shows non-trashed users (the default), 'only' shows soft-deleted
+     * users - see applyTrashedFilter() in helpers.php.
+     */
+    #[Url]
+    public string $trashed = '';
+
     /** @var array<int, int> */
     public array $selected = [];
 
@@ -46,6 +53,11 @@ class UsersIndex extends Component
     }
 
     public function updatingStatus(): void
+    {
+        $this->perPage = 10;
+    }
+
+    public function updatingTrashed(): void
     {
         $this->perPage = 10;
     }
@@ -76,6 +88,51 @@ class UsersIndex extends Component
         Gate::authorize('delete', $user);
 
         app(UserService::class)->deleteUser($user);
+
+        $this->selected = array_values(array_diff($this->selected, [$user->id]));
+    }
+
+    /**
+     * Takes a plain id rather than a type-hinted User $user: Livewire's
+     * implicit action-parameter binding (unlike its route/mount binding)
+     * always resolves through Model::resolveRouteBinding(), which excludes
+     * soft-deleted rows - a type-hinted parameter here would 404 on every
+     * trashed user this action is meant to target.
+     */
+    public function restoreUser(int $userId): void
+    {
+        $user = app(UserService::class)->findOrFail($userId, withTrashed: true);
+
+        Gate::authorize('restore', $user);
+
+        // Same reasoning as toggleActive() above - the row's Restore button
+        // is only reachable from the trashed view, but a tampered/direct
+        // `wire:click` call can still reach here.
+        try {
+            app(UserService::class)->restoreUser($user);
+            $this->dispatch('toast', type: 'success', message: 'User restored.');
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+        }
+
+        $this->selected = array_values(array_diff($this->selected, [$user->id]));
+    }
+
+    /**
+     * Takes a plain id - see restoreUser()'s docblock for why.
+     */
+    public function forceDeleteUser(int $userId): void
+    {
+        $user = app(UserService::class)->findOrFail($userId, withTrashed: true);
+
+        Gate::authorize('forceDelete', $user);
+
+        try {
+            app(UserService::class)->forceDeleteUser($user);
+            $this->dispatch('toast', type: 'success', message: 'User permanently deleted.');
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+        }
 
         $this->selected = array_values(array_diff($this->selected, [$user->id]));
     }
@@ -164,6 +221,7 @@ class UsersIndex extends Component
             search: $this->search,
             sort: 'name_asc',
             filters: $this->filters(),
+            trashed: $this->trashed,
         );
 
         return $exportService->export($query, User::class, 'users-'.now()->format('Y-m-d').'.xlsx');
@@ -174,7 +232,7 @@ class UsersIndex extends Component
         Gate::authorize('admin.users.export');
 
         $users = app(UserService::class)
-            ->filteredQuery(search: $this->search, sort: 'name_asc', filters: $this->filters())
+            ->filteredQuery(search: $this->search, sort: 'name_asc', filters: $this->filters(), trashed: $this->trashed)
             ->get();
 
         return $pdfService->streamFromView('pdf.users', ['users' => $users], 'users-'.now()->format('Y-m-d').'.pdf');
@@ -200,6 +258,7 @@ class UsersIndex extends Component
             // control to the UI.
             sort: 'name_asc',
             filters: $this->filters(),
+            trashed: $this->trashed,
         );
     }
 

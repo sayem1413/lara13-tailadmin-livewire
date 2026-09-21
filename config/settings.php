@@ -28,6 +28,7 @@ return [
                 'label' => 'Application Name',
                 'type' => 'text',
                 'default' => config('app.name'),
+                'rules' => ['required', 'string', 'max:255'],
             ],
             'support_email' => [
                 'label' => 'Support Email',

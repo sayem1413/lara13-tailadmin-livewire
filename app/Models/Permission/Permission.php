@@ -2,7 +2,10 @@
 
 namespace App\Models\Permission;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Support\Collection;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
@@ -10,15 +13,10 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  * @property string|null $section
  * @property string|null $description
  */
+#[Fillable(['name', 'guard_name', 'module', 'section', 'description'])]
 class Permission extends SpatiePermission
 {
-    protected $fillable = [
-        'name',
-        'guard_name',
-        'module',
-        'section',
-        'description',
-    ];
+    use LogsActivity;
 
     /**
      * Sections that grant write/manage access to a module. Granting any of
@@ -45,6 +43,14 @@ class Permission extends SpatiePermission
             'section' => 'string',
             'description' => 'string',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'guard_name', 'module', 'section', 'description'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     /**

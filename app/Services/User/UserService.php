@@ -2,6 +2,7 @@
 
 namespace App\Services\User;
 
+use App\Models\Permission\Role;
 use App\Models\User;
 use App\Notifications\UserRoleUpdatedNotification;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
@@ -22,27 +23,35 @@ class UserService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  string|null  $trashed  'only' for soft-deleted rows only, 'with'
+     *                                for both, anything else excludes them -
+     *                                see applyTrashedFilter() in helpers.php.
      * @return LengthAwarePaginator<int, User>
      */
     public function paginate(
         ?string $search = null,
         int $perPage = 10,
         string $sort = 'newest',
-        array $filters = []
+        array $filters = [],
+        ?string $trashed = null
     ): LengthAwarePaginator {
-        return $this->userRepository->paginate($search, $perPage, $sort, $filters);
+        return $this->userRepository->paginate($search, $perPage, $sort, $filters, $trashed);
     }
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  string|null  $trashed  'only' for soft-deleted rows only, 'with'
+     *                                for both, anything else excludes them -
+     *                                see applyTrashedFilter() in helpers.php.
      * @return Builder<User>
      */
     public function filteredQuery(
         ?string $search = null,
         string $sort = 'newest',
-        array $filters = []
+        array $filters = [],
+        ?string $trashed = null
     ): Builder {
-        return $this->userRepository->filteredQuery($search, $sort, $filters);
+        return $this->userRepository->filteredQuery($search, $sort, $filters, $trashed);
     }
 
     /**
@@ -54,6 +63,7 @@ class UserService
         unset($data['roles']);
 
         $this->guardAgainstUnassignableSuperAdminRole($roles);
+        $this->guardAgainstInactiveRoleAssignment($roles);
 
         return DB::transaction(function () use ($data, $roles) {
             $user = $this->userRepository->create($data);
@@ -85,6 +95,7 @@ class UserService
 
         if ($roles !== null) {
             $this->guardAgainstUnassignableSuperAdminRole($roles);
+            $this->guardAgainstInactiveRoleAssignment($roles);
         }
 
         if (empty($data['password'])) {
@@ -137,14 +148,56 @@ class UserService
         }
     }
 
-    public function findOrFail(int $id): User
+    /**
+     * An inactive role represents a job function that's been retired but
+     * deliberately not deleted (see RoleService::deleteRole()'s own "still
+     * assigned to a user" guard, which exists precisely so a role already
+     * in use can't just be removed out from under its holders) - so while
+     * an inactive role is left alone for whoever already holds it, it must
+     * never be handed out to a new sync. This is a plain boolean check, not
+     * a Lifecycle Integrity guard: is_active on Role has no cascade/orphan
+     * behavior, it just blocks this one write.
+     *
+     * @param  array<int, string>  $roles
+     */
+    protected function guardAgainstInactiveRoleAssignment(array $roles): void
     {
-        return $this->userRepository->findOrFail($id);
+        $inactiveRoles = Role::query()
+            ->whereIn('name', $roles)
+            ->where('is_active', false)
+            ->pluck('name');
+
+        if ($inactiveRoles->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'roles' => "The following role(s) are inactive and cannot be assigned: {$inactiveRoles->implode(', ')}.",
+            ]);
+        }
+    }
+
+    public function findOrFail(int $id, bool $withTrashed = false): User
+    {
+        return $this->userRepository->findOrFail($id, $withTrashed);
     }
 
     public function deleteUser(User $user): bool
     {
         return $this->userRepository->delete($user);
+    }
+
+    public function restoreUser(User $user): User
+    {
+        return $this->userRepository->restore($user);
+    }
+
+    /**
+     * Permanently removes the user row. The user's avatar media is cleaned
+     * up automatically - InteractsWithMedia hooks the model's "deleting"
+     * event and calls deleteAllMedia() once forceDeleting is true, so no
+     * separate media cleanup is needed here.
+     */
+    public function forceDeleteUser(User $user): bool
+    {
+        return $this->userRepository->forceDelete($user);
     }
 
     /**

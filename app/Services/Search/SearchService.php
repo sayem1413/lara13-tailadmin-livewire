@@ -19,6 +19,13 @@ class SearchService
      */
     public function search(?User $user, string $term, int $perModuleLimit = 5, int $totalGroupLimit = 5): Collection
     {
+        // GlobalSearch only stops calling this at 2 characters (see its
+        // results() computed property) - nothing caps the upper end, and
+        // the term is bound straight into a LIKE '%...%' per configured
+        // module below, so an arbitrarily long value would otherwise be
+        // run against every permitted module's query as-is.
+        $term = mb_substr($term, 0, 255);
+
         /** @var array<int, array<string, mixed>> $modules */
         $modules = config('search.modules', []);
 
