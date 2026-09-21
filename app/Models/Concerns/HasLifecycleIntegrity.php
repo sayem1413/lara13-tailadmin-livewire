@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use App\Contracts\LifecycleAware;
+use App\Events\Lifecycle\Activated;
 use App\Events\Lifecycle\Activating;
 use App\Events\Lifecycle\Deactivated;
 use App\Services\Lifecycle\LifecycleIntegrityService;
@@ -29,6 +30,12 @@ trait HasLifecycleIntegrity
         Event::listen(Activating::class, function (Activating $event) use ($modelClass): void {
             if ($event->model instanceof $modelClass) {
                 app(LifecycleIntegrityService::class)->guardActivating($event->model);
+            }
+        });
+
+        Event::listen(Activated::class, function (Activated $event) use ($modelClass): void {
+            if ($event->model instanceof $modelClass) {
+                app(LifecycleIntegrityService::class)->cascadeActivated($event->model);
             }
         });
 

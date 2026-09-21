@@ -70,6 +70,24 @@ class LifecycleDemoDepartment extends Model implements LifecycleAware
     public static string $employeeRestoreStrategy = 'pending_activation';
 
     /**
+     * Test-only knob so a test can declare this model itself as
+     * requiring retention (self-declared on its own upward rule) without
+     * a second fixture.
+     */
+    public static bool $retainedFromOrganization = false;
+
+    /**
+     * Test-only knob, mirroring LifecycleDemoOrganization's
+     * $departmentCascade, so a test can opt the employees relation into
+     * 'activate', or opt it OUT of 'deactivate' (to exercise a case
+     * where an employee's own lifecycle_status can diverge from its
+     * effective availability - see isEffectivelyActive()).
+     *
+     * @var array<int, string>
+     */
+    public static array $employeeCascade = ['deactivate', 'delete'];
+
+    /**
      * @return array<string, array<string, mixed>>
      */
     public function lifecycleRules(): array
@@ -78,11 +96,12 @@ class LifecycleDemoDepartment extends Model implements LifecycleAware
             'organization' => [
                 'type' => 'hierarchical',
                 'parent_relation' => 'organization',
+                'retain' => static::$retainedFromOrganization,
             ],
             'employees' => [
                 'type' => 'hierarchical',
                 'relation' => 'employees',
-                'cascade' => ['deactivate', 'delete'],
+                'cascade' => static::$employeeCascade,
                 'restore_strategy' => static::$employeeRestoreStrategy,
             ],
         ];

@@ -29,10 +29,25 @@ class LifecycleDemoFolder extends Model implements LifecycleAware
     ];
 
     /**
-     * Test-only knob so different tests can exercise both deletion
+     * Test-only knob so different tests can exercise all three deletion
      * strategies without two fixture models.
      */
     public static string $deletionStrategy = 'delete_subtree';
+
+    /**
+     * Test-only knob so a test can opt the children relation into the
+     * (off-by-default) 'activate' cascade trigger without a second
+     * fixture.
+     *
+     * @var array<int, string>
+     */
+    public static array $childrenCascade = [];
+
+    /**
+     * Test-only knob so a test can mark the children relation `retain`
+     * without a second fixture.
+     */
+    public static bool $childrenRetained = false;
 
     /**
      * @return array<string, string>
@@ -75,6 +90,8 @@ class LifecycleDemoFolder extends Model implements LifecycleAware
                 'relation' => 'children',
                 'parent_relation' => 'parent',
                 'deletion_strategy' => static::$deletionStrategy,
+                'cascade' => static::$childrenCascade,
+                'retain' => static::$childrenRetained,
             ],
         ];
     }

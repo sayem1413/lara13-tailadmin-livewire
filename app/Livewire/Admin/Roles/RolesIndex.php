@@ -43,6 +43,22 @@ class RolesIndex extends Component
         $this->dispatch('toast', type: 'success', message: "\"{$role->name}\" deleted.");
     }
 
+    /**
+     * Toggles is_active only - the permissions a role already holds are
+     * untouched (RoleService::updateRole() leaves permissions alone when
+     * the 'permissions' key is omitted from $data).
+     */
+    public function toggleActive(Role $role): void
+    {
+        Gate::authorize('update', $role);
+
+        try {
+            app(RoleService::class)->updateRole($role, ['is_active' => ! $role->is_active]);
+        } catch (ValidationException $exception) {
+            $this->dispatch('toast', type: 'error', message: collect($exception->errors())->flatten()->first());
+        }
+    }
+
     public function render(): View
     {
         return view('livewire.admin.roles.roles-index', [

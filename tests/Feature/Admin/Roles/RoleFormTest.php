@@ -142,29 +142,50 @@ it('checks every permission at once via the global toggle, then unchecks them al
     expect($component->get('selectedPermissions'))->toBe([]);
 });
 
-it('renders the global and per-module select-all checkboxes as checked once everything in scope is selected', function () {
+it('renders the per-module select-all checkbox as checked once every permission the actor HOLDS in that module is selected', function () {
     Artisan::call('permissions:sync');
 
     $actor = User::factory()->create();
     $actor->givePermissionTo('admin.roles.create');
 
-    $everyPermission = Permission::query()->pluck('name')->all();
-
+    // The actor only holds SOME of the users module's permissions - the
+    // module select-all checkbox reflects "every permission the actor
+    // holds in this module is selected", not "every permission in the
+    // module", since toggleGroup() is only ever called with the held
+    // subset (see role-form.blade.php) - an actor can't use this control
+    // to select a permission they don't hold themselves.
+    //
     // Ordered the same way RoleForm::permissionGroups() orders them, since
     // this is compared against the exact wire:click argument list rendered
     // in the view - a different array order would be the same permission
     // set but a different (mis-matching) JSON string.
-    $usersPermissions = Permission::query()->where('module', 'users')->orderBy('section')->pluck('name')->all();
+    $heldUsersPermissions = Permission::query()->where('module', 'users')->orderBy('section')->take(2)->pluck('name')->all();
+    $actor->givePermissionTo($heldUsersPermissions);
 
     $component = Livewire::actingAs($actor)->test(RoleForm::class);
 
-    $component->assertDontSeeHtml('wire:click="toggleAllPermissions" checked="checked"');
+    $component->set('selectedPermissions', $heldUsersPermissions);
+    $component->assertSeeHtml('wire:click="toggleGroup('.e(json_encode($heldUsersPermissions)).')" checked="checked"');
+});
 
-    $component->set('selectedPermissions', $usersPermissions);
-    $component->assertSeeHtml('wire:click="toggleGroup('.e(json_encode($usersPermissions)).')" checked="checked"');
+it('disables the per-module select-all checkbox when the actor holds none of that module\'s permissions', function () {
+    Artisan::call('permissions:sync');
 
-    $component->set('selectedPermissions', $everyPermission);
-    $component->assertSeeHtml('wire:click="toggleAllPermissions" checked="checked"');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)->test(RoleForm::class)
+        ->assertSeeHtml('wire:click="toggleGroup([])" disabled="disabled"');
+});
+
+it('no longer offers a single "select all permissions" control for the whole page - only per-module', function () {
+    Permission::findOrCreate('admin.roles.create');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)->test(RoleForm::class)
+        ->assertDontSeeHtml('wire:click="toggleAllPermissions"');
 });
 
 it('saves description and is_active when creating a role', function () {
@@ -266,4 +287,69 @@ it('forbids opening the edit form for the Super Admin role even for a Super Admi
     Livewire::actingAs($actor)
         ->test(RoleForm::class, ['role' => Role::findByName('Super Admin')])
         ->assertForbidden();
+});
+
+it('renders a checkbox for a permission the actor does not hold as disabled with an explanatory tooltip', function () {
+    Permission::findOrCreate('admin.roles.create');
+    Permission::findOrCreate('admin.users.index');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)->test(RoleForm::class)
+        ->assertSeeHtml('value="admin.users.index" disabled="disabled"')
+        ->assertSeeHtml('title="You don\'t have this permission yourself, so you can\'t grant it to a role."');
+});
+
+it('renders a checkbox for a permission the actor holds as enabled, without a tooltip', function () {
+    Permission::findOrCreate('admin.roles.create');
+    Permission::findOrCreate('admin.users.index');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+    $actor->givePermissionTo('admin.users.index');
+
+    Livewire::actingAs($actor)->test(RoleForm::class)
+        ->assertDontSeeHtml('value="admin.users.index" disabled="disabled"');
+});
+
+it('does not disable any permission checkbox for a Super Admin actor', function () {
+    Permission::findOrCreate('admin.roles.create');
+    Permission::findOrCreate('admin.users.index');
+    Role::findOrCreate('Super Admin')->givePermissionTo(['admin.roles.create', 'admin.users.index']);
+
+    $actor = User::factory()->create();
+    $actor->assignRole('Super Admin');
+
+    Livewire::actingAs($actor)->test(RoleForm::class)
+        ->assertDontSeeHtml('disabled="disabled"');
+});
+
+it('snapshots the role\'s permissions at mount as originalPermissions, unaffected by later selection changes', function () {
+    Permission::findOrCreate('admin.roles.edit');
+    Permission::findOrCreate('admin.users.index');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.edit');
+    $actor->givePermissionTo('admin.users.index');
+
+    $role = Role::findOrCreate('Editor');
+    $role->givePermissionTo('admin.users.index');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class, ['role' => $role])
+        ->assertSet('originalPermissions', ['admin.users.index'])
+        ->set('selectedPermissions', [])
+        ->assertSet('originalPermissions', ['admin.users.index']);
+});
+
+it('snapshots an empty originalPermissions for a brand new role', function () {
+    Permission::findOrCreate('admin.roles.create');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.create');
+
+    Livewire::actingAs($actor)
+        ->test(RoleForm::class)
+        ->assertSet('originalPermissions', []);
 });

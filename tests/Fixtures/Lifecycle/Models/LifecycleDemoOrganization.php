@@ -34,6 +34,21 @@ class LifecycleDemoOrganization extends Model implements LifecycleAware
     public static string $departmentRestoreStrategy = 'pending_activation';
 
     /**
+     * Test-only knob so a test can opt the departments relation into the
+     * (off-by-default) 'activate' cascade trigger without a second
+     * fixture pair.
+     *
+     * @var array<int, string>
+     */
+    public static array $departmentCascade = ['deactivate', 'delete'];
+
+    /**
+     * Test-only knob so a test can mark the departments relation
+     * `retain` without a second fixture pair.
+     */
+    public static bool $departmentsRetained = false;
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -64,8 +79,9 @@ class LifecycleDemoOrganization extends Model implements LifecycleAware
             'departments' => [
                 'type' => 'exclusive',
                 'relation' => 'departments',
-                'cascade' => ['deactivate', 'delete'],
+                'cascade' => static::$departmentCascade,
                 'restore_strategy' => static::$departmentRestoreStrategy,
+                'retain' => static::$departmentsRetained,
             ],
         ];
     }

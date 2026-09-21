@@ -9,15 +9,18 @@ use App\Enums\LifecycleRelationType;
 use App\Enums\LifecycleStatus;
 use App\Enums\OrphanStrategy;
 use App\Enums\RestoreStrategy;
+use App\Exceptions\Lifecycle\ChildrenExistException;
 use App\Exceptions\Lifecycle\CircularReferenceException;
 use App\Exceptions\Lifecycle\OrphanRemovalBlockedException;
 use App\Exceptions\Lifecycle\ParentNotActiveException;
+use App\Exceptions\Lifecycle\RetainedRecordException;
 use App\Jobs\Lifecycle\CascadeLifecycleActionJob;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -64,10 +67,14 @@ class LifecycleIntegrityService
             return;
         }
 
+        $this->affectedCounts = [];
+
         DB::transaction(function () use ($model): void {
             $this->lockRow($model);
             $model->activate();
         });
+
+        $this->logCascadeAction($model, 'Activated');
     }
 
     public function deactivate(LifecycleAware&Model $model): void
@@ -104,6 +111,8 @@ class LifecycleIntegrityService
 
     public function forceDelete(LifecycleAware&Model $model): void
     {
+        $this->guardRetention($model);
+
         $this->affectedCounts = [];
 
         DB::transaction(function () use ($model): void {
@@ -184,7 +193,9 @@ class LifecycleIntegrityService
      * (reusing the same recursive cascade every other relationship type
      * uses - see cascadeDeleted()). PromoteChildren instead re-parents
      * the node's direct children to its own parent first, so only this
-     * one node is removed.
+     * one node is removed. BlockIfChildrenExist refuses the delete
+     * outright (ChildrenExistException) if the node currently has any
+     * children at all - the caller must move or delete them first.
      */
     public function deleteNode(LifecycleAware&Model $model, ?DeletionStrategy $strategy = null): void
     {
@@ -198,6 +209,10 @@ class LifecycleIntegrityService
         DB::transaction(function () use ($model, $strategy): void {
             $this->lockRow($model);
 
+            if ($strategy === DeletionStrategy::BlockIfChildrenExist && $this->hasChildren($model)) {
+                throw ChildrenExistException::make($model);
+            }
+
             if ($strategy === DeletionStrategy::PromoteChildren) {
                 $this->promoteChildren($model);
             }
@@ -209,10 +224,38 @@ class LifecycleIntegrityService
     }
 
     /**
+     * The concurrency-safe way to re-parent a self-referential node: a
+     * plain `$model->update(['parent_id' => ...])` remains fully
+     * supported (the same guardCircularReference()/syncClosureTable()
+     * hooks below fire either way) but isn't lock-protected against two
+     * concurrent re-parents racing to form a cycle across two different
+     * nodes at once - see Core Business Rule 7 and
+     * docs/lifecycle-integrity.md. This wraps the same update in a
+     * transaction and locks both $model's own row and the prospective
+     * new parent's row first, closing that race.
+     */
+    public function reparent(LifecycleAware&Model $model, ?Model $newParent): void
+    {
+        DB::transaction(function () use ($model, $newParent): void {
+            $this->lockRow($model);
+
+            if ($newParent instanceof Model) {
+                $newParent->newQuery()->lockForUpdate()->find($newParent->getKey());
+            }
+
+            $model->update(['parent_id' => $newParent?->getKey()]);
+        });
+    }
+
+    /**
      * Blocks a self-referential parent_id change that would make a node
      * its own ancestor - checked on every update where parent_id is
      * dirty, not just at creation (a brand new node can never already
-     * have descendants, so it can never form a cycle).
+     * have descendants, so it can never form a cycle). The prospective
+     * new parent is read with lockForUpdate() for the same reason every
+     * other ancestor-status read in this class is (see lockRow()) - a
+     * concurrent transaction re-parenting a different node into a cycle
+     * with this one must not be able to interleave with this check.
      */
     public function guardCircularReference(LifecycleAware&Model $model): void
     {
@@ -232,7 +275,7 @@ class LifecycleIntegrityService
             throw CircularReferenceException::make($model);
         }
 
-        $newParent = $model->newQuery()->find($newParentId);
+        $newParent = $model->newQuery()->lockForUpdate()->find($newParentId);
 
         if ($newParent instanceof Model && $this->closures->isDescendantOf($newParent, $model)) {
             throw CircularReferenceException::make($model);
@@ -297,6 +340,25 @@ class LifecycleIntegrityService
         });
     }
 
+    /**
+     * Whether a self-referential $model currently has at least one
+     * direct child - used by deleteNode()'s BlockIfChildrenExist
+     * strategy. False for a model with no self_referential rule at all.
+     */
+    private function hasChildren(LifecycleAware&Model $model): bool
+    {
+        $rule = $this->selfReferentialRule($model);
+
+        if ($rule === null) {
+            return false;
+        }
+
+        $relationName = $this->childrenRule($rule)['relation'];
+        $relation = $model->{$relationName}();
+
+        return $relation instanceof Relation && $relation->exists();
+    }
+
     // ---- Guards (wired to Activating / native restoring) ---------------------
 
     /**
@@ -334,7 +396,115 @@ class LifecycleIntegrityService
         }
     }
 
+    /**
+     * Blocks force-deleting $model directly when one of its OWN upward
+     * rules is marked `retain` - i.e. $model itself declares "records
+     * reached via this relationship must never be permanently deleted".
+     * The cascade-triggered equivalent (a retained relationship's
+     * children surviving their *parent's* force-delete) is guarded
+     * separately by guardRetainedRelation(), called from cascadeDeleted().
+     */
+    private function guardRetention(LifecycleAware&Model $model): void
+    {
+        foreach ($this->upwardRules($model) as $rule) {
+            if ($rule['retain'] ?? false) {
+                throw RetainedRecordException::make($model);
+            }
+        }
+    }
+
+    /**
+     * Blocks a force-delete cascade from reaching a `retain`-marked
+     * relationship that still has at least one row (trashed or not) -
+     * see Core Business Rule 2/6. Checked before any mutation happens for
+     * that relation, so the whole triggering DB::transaction() rolls back
+     * cleanly rather than leaving a partially-completed force-delete.
+     * A no-op for a soft delete ($force === false) or an unmarked rule.
+     *
+     * @param  array<string, mixed>  $rule
+     */
+    private function guardRetainedRelation(LifecycleAware&Model $model, array $rule, bool $force): void
+    {
+        if (! $force || ! ($rule['retain'] ?? false)) {
+            return;
+        }
+
+        $relationName = $rule['relation'] ?? null;
+
+        if (! is_string($relationName)) {
+            return;
+        }
+
+        $relation = $model->{$relationName}();
+
+        if ($relation instanceof Relation && $relation->withTrashed()->exists()) {
+            throw RetainedRecordException::make($model);
+        }
+    }
+
+    /**
+     * Whether $model is not just marked active on its own, but every
+     * ancestor up its chain is active too - the "effective operational
+     * availability" this module's write-time guards protect, exposed
+     * here as a read-only check (see Core Business Rule 1 and
+     * docs/lifecycle-integrity.md's "Own status vs. effective
+     * availability"). $model->isLifecycleActive() alone only ever
+     * reflects $model's own lifecycle_status column - it says nothing
+     * about an ancestor that went inactive via a relationship whose
+     * `cascade` list doesn't include 'deactivate'.
+     */
+    public function isEffectivelyActive(LifecycleAware&Model $model): bool
+    {
+        if (! $model->isLifecycleActive()) {
+            return false;
+        }
+
+        foreach ($this->ancestors($model) as $ancestor) {
+            if (! $ancestor->isLifecycleActive()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // ---- Cascades (wired to Deactivated / native deleted / native restored) --
+
+    /**
+     * Cascades activation down every exclusive/hierarchical (and, if
+     * explicitly opted in, self-referential) child relationship this
+     * model owns whose `cascade` list includes 'activate'. Unlike
+     * deactivate/delete, this is NOT part of the default `cascade` list
+     * ([['deactivate', 'delete']] - a relationship must opt in
+     * explicitly, e.g. `'cascade' => ['activate', 'deactivate',
+     * 'delete']`) - reactivating a parent silently reactivating an
+     * entire subtree is exactly the kind of surprise Core Business Rule
+     * 2 warns restoration against, so it defaults to off. Recurses
+     * naturally, same as cascadeDeactivated().
+     */
+    public function cascadeActivated(LifecycleAware&Model $model): void
+    {
+        $this->withinCascade(function () use ($model): void {
+            $activateChild = function (Model $child): void {
+                if ($child instanceof LifecycleStatusAware && ! $child->isLifecycleActive()) {
+                    $child->activate();
+                    $this->recordAffected($child);
+                }
+            };
+
+            foreach ($this->downwardRules($model) as $rule) {
+                if (in_array('activate', $this->cascadeTriggers($rule), true)) {
+                    $this->cascadeChildrenOrQueue($model, $rule, 'activate', force: false, inlineCallback: $activateChild);
+                }
+            }
+
+            foreach ($this->selfReferentialRules($model) as $rule) {
+                if (in_array('activate', (array) ($rule['cascade'] ?? []), true)) {
+                    $this->cascadeChildrenOrQueue($model, $this->childrenRule($rule), 'activate', force: false, inlineCallback: $activateChild);
+                }
+            }
+        });
+    }
 
     /**
      * Cascades deactivation down every exclusive/hierarchical child
@@ -401,6 +571,7 @@ class LifecycleIntegrityService
 
             foreach ($this->downwardRules($model) as $rule) {
                 if (in_array('delete', $this->cascadeTriggers($rule), true)) {
+                    $this->guardRetainedRelation($model, $rule, $force);
                     $this->cascadeChildrenOrQueue($model, $rule, 'delete', $force, $deleteChild);
                 }
             }
@@ -410,7 +581,9 @@ class LifecycleIntegrityService
             }
 
             foreach ($this->selfReferentialRules($model) as $rule) {
-                $this->cascadeChildrenOrQueue($model, $this->childrenRule($rule), 'delete', $force, $deleteChild);
+                $rule = $this->childrenRule($rule);
+                $this->guardRetainedRelation($model, $rule, $force);
+                $this->cascadeChildrenOrQueue($model, $rule, 'delete', $force, $deleteChild);
             }
         });
     }
@@ -512,6 +685,16 @@ class LifecycleIntegrityService
         }
     }
 
+    /**
+     * Prefix recordAffected() uses instead of a plain class name when a
+     * relationship's cascade was dispatched to CascadeLifecycleActionJob
+     * rather than actually applied yet - see logCascadeAction(), which
+     * must never describe this count with "cascaded to" (Core Business
+     * Rule 8: a queued cascade has not completed, and the log entry must
+     * not claim otherwise).
+     */
+    private const QUEUED_PREFIX = 'queued:';
+
     private function recordAffected(Model $child): void
     {
         $key = class_basename($child);
@@ -519,13 +702,18 @@ class LifecycleIntegrityService
     }
 
     /**
-     * Writes ONE grouped activity log entry for a triggering action,
-     * with a per-type breakdown of everything the cascade touched (e.g.
-     * "Deactivated Organization (cascaded to 3 Department, 42
-     * Employee)") rather than one log row per affected record - avoids
-     * flooding the audit log on a large cascade. Affected ids aren't
-     * stored (only counts) to keep the properties payload small; add
-     * them here if a drill-down view needs them.
+     * Writes ONE grouped activity log entry for a triggering action, with
+     * a per-type breakdown of everything the cascade touched (e.g.
+     * "Deactivated Organization (cascaded to 3 Department; queued 1000
+     * Employee for background processing)") rather than one log row per
+     * affected record - avoids flooding the audit log on a large
+     * cascade. Already-applied counts and merely-queued counts (see
+     * cascadeChildrenOrQueue()) are deliberately reported as separate
+     * clauses, never blended into one "cascaded to" figure - a queued
+     * count is not yet true, and this description must not claim it is
+     * (Core Business Rule 8). Affected ids aren't stored (only counts) to
+     * keep the properties payload small; add them here if a drill-down
+     * view needs them.
      */
     private function logCascadeAction(Model $model, string $verb): void
     {
@@ -533,12 +721,23 @@ class LifecycleIntegrityService
             return;
         }
 
-        $breakdown = collect($this->affectedCounts)
-            ->map(fn (int $count, string $type): string => "{$count} {$type}")
-            ->implode(', ');
+        $applied = collect($this->affectedCounts)->reject(
+            fn (int $count, string $type): bool => str_starts_with($type, self::QUEUED_PREFIX)
+        );
 
-        $description = $breakdown !== ''
-            ? sprintf('%s %s (cascaded to %s)', $verb, class_basename($model), $breakdown)
+        $queued = collect($this->affectedCounts)->filter(
+            fn (int $count, string $type): bool => str_starts_with($type, self::QUEUED_PREFIX)
+        )->mapWithKeys(
+            fn (int $count, string $type): array => [Str::after($type, self::QUEUED_PREFIX) => $count]
+        );
+
+        $clauses = array_filter([
+            $applied->isNotEmpty() ? 'cascaded to '.$applied->map(fn (int $count, string $type): string => "{$count} {$type}")->implode(', ') : null,
+            $queued->isNotEmpty() ? 'queued '.$queued->map(fn (int $count, string $type): string => "{$count} {$type}")->implode(', ').' for background processing' : null,
+        ]);
+
+        $description = $clauses !== []
+            ? sprintf('%s %s (%s)', $verb, class_basename($model), implode('; ', $clauses))
             : sprintf('%s %s', $verb, class_basename($model));
 
         activity()
@@ -551,9 +750,9 @@ class LifecycleIntegrityService
      * Cascades one relationship's children inline (chunked, as today)
      * if its current row count is under the bulk threshold, or dispatches
      * a CascadeLifecycleActionJob instead once it's at or over it - see
-     * config('lifecycle.bulk_threshold'). Only used for the two cascade
-     * actions bulk enough to matter in practice (deactivate/delete);
-     * restore's per-child strategy branching isn't queued.
+     * config('lifecycle.bulk_threshold'). Used for activate/deactivate/
+     * delete (all opt-in-per-relationship except deactivate/delete's
+     * default); restore's per-child strategy branching isn't queued.
      *
      * @param  array<string, mixed>  $rule
      */
@@ -575,7 +774,8 @@ class LifecycleIntegrityService
         $count = $query->count();
 
         if ($count >= (int) config('lifecycle.bulk_threshold', 500)) {
-            $this->affectedCounts["queued:{$relationName}"] = $count;
+            $childType = class_basename($relation->getRelated());
+            $this->affectedCounts[self::QUEUED_PREFIX.$childType] = $count;
 
             CascadeLifecycleActionJob::dispatch($model::class, $model->getKey(), $relationName, $action, $force)
                 ->onConnection(config('lifecycle.queue.connection'))

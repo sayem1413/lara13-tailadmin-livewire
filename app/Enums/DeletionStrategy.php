@@ -6,4 +6,5 @@ enum DeletionStrategy: string
 {
     case PromoteChildren = 'promote_children';
     case DeleteSubtree = 'delete_subtree';
+    case BlockIfChildrenExist = 'block_if_children_exist';
 }

@@ -8,7 +8,9 @@ use Tests\Fixtures\Lifecycle\Models\LifecycleDemoOrganization;
 
 beforeEach(function () {
     LifecycleDemoOrganization::$departmentRestoreStrategy = 'pending_activation';
+    LifecycleDemoOrganization::$departmentCascade = ['deactivate', 'delete'];
     LifecycleDemoDepartment::$employeeRestoreStrategy = 'pending_activation';
+    LifecycleDemoDepartment::$employeeCascade = ['deactivate', 'delete'];
 });
 
 function makeHierarchy(): array
@@ -88,4 +90,57 @@ it('requires every ancestor to be active before a grandchild can be restored', f
     lifecycleService()->restore($employee);
 
     expect($employee->refresh()->trashed())->toBeFalse();
+});
+
+it('recursively cascades activation two levels down when every level opts into the activate trigger', function () {
+    LifecycleDemoOrganization::$departmentCascade = ['activate', 'deactivate', 'delete'];
+    LifecycleDemoDepartment::$employeeCascade = ['activate', 'deactivate', 'delete'];
+
+    [$organization, $department, $employee] = makeHierarchy();
+
+    lifecycleService()->deactivate($organization);
+    lifecycleService()->activate($organization);
+
+    expect($department->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active)
+        ->and($employee->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active);
+});
+
+it('does not recurse activation to the grandchild level when only the middle level opts in', function () {
+    LifecycleDemoOrganization::$departmentCascade = ['activate', 'deactivate', 'delete'];
+    LifecycleDemoDepartment::$employeeCascade = ['deactivate', 'delete'];
+
+    [$organization, $department, $employee] = makeHierarchy();
+
+    lifecycleService()->deactivate($organization);
+    lifecycleService()->activate($organization);
+
+    expect($department->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active)
+        ->and($employee->refresh()->lifecycle_status)->toBe(LifecycleStatus::Inactive);
+});
+
+it('reports a record as not effectively active once an ancestor deactivates, even if a relationship never cascades that change down to it', function () {
+    // The department -> employee relationship doesn't cascade
+    // deactivate, so a deactivated department leaves the employee's own
+    // lifecycle_status untouched at 'active' - its own column and its
+    // real, effective availability have diverged.
+    LifecycleDemoDepartment::$employeeCascade = [];
+
+    [$organization, $department, $employee] = makeHierarchy();
+
+    lifecycleService()->deactivate($department);
+
+    expect($employee->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active)
+        ->and($employee->isLifecycleActive())->toBeTrue()
+        ->and(lifecycleService()->isEffectivelyActive($employee))->toBeFalse();
+});
+
+it('reports a record as effectively active only once every ancestor up the full chain is active, not just the immediate parent', function () {
+    [$organization, $department, $employee] = makeHierarchy();
+
+    expect(lifecycleService()->isEffectivelyActive($employee))->toBeTrue();
+
+    LifecycleDemoDepartment::whereKey($department->id)->update(['lifecycle_status' => 'active']);
+    $organization->deactivate();
+
+    expect(lifecycleService()->isEffectivelyActive($employee))->toBeFalse();
 });

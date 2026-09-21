@@ -55,6 +55,9 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-3 text-sm">
                                     @can('update', $role)
+                                        <button type="button" wire:click="toggleActive({{ $role->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                                            {{ $role->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
                                         <a href="{{ route('admin.roles.edit', $role) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
                                     @endcan
                                     @can('delete', $role)
@@ -111,6 +114,9 @@
 
                     <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
                         @can('update', $role)
+                            <button type="button" wire:click="toggleActive({{ $role->id }})" class="min-h-11 font-medium text-gray-600 dark:text-gray-300">
+                                {{ $role->is_active ? 'Deactivate' : 'Activate' }}
+                            </button>
                             <a href="{{ route('admin.roles.edit', $role) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
                         @endcan
                         @can('delete', $role)

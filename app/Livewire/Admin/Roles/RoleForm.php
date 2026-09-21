@@ -10,6 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -28,6 +29,16 @@ class RoleForm extends Component
     /** @var array<int, string> */
     public array $selectedPermissions = [];
 
+    /**
+     * A snapshot of $selectedPermissions as loaded, so the view can warn
+     * before saving a change that revokes access rather than just grants
+     * it - a role losing a permission is a more consequential action than
+     * gaining one. Never mutated after mount().
+     *
+     * @var array<int, string>
+     */
+    public array $originalPermissions = [];
+
     public function mount(?Role $role = null): void
     {
         if ($role?->exists) {
@@ -39,6 +50,7 @@ class RoleForm extends Component
             $this->description = $role->description;
             $this->is_active = $role->is_active;
             $this->selectedPermissions = $role->permissions->pluck('name')->all();
+            $this->originalPermissions = $this->selectedPermissions;
         } else {
             Gate::authorize('create', Role::class);
         }
@@ -137,7 +149,7 @@ class RoleForm extends Component
     }
 
     /**
-     * Permissions grouped by module (e.g. "users") for the checkbox matrix.
+     * Permissions grouped by module (e.g. "users") for the module cards.
      *
      * @return Collection<int|string, EloquentCollection<int, Permission>>
      */
@@ -146,10 +158,70 @@ class RoleForm extends Component
         return app(PermissionService::class)->groupedByModule();
     }
 
+    /**
+     * Permission names the signed-in user currently holds themselves -
+     * read-only, purely for the view to grey out (not omit) a checkbox
+     * the escalation guard would reject anyway, so an admin sees WHY a
+     * box is unavailable rather than assuming it's missing by mistake.
+     * Mirrors RoleService::guardAgainstUnassignablePermissions()'s own
+     * check exactly (Super Admin's role is itself synced to hold every
+     * permission - see RolesAndPermissionsSeeder - so this needs no
+     * separate Super Admin branch).
+     *
+     * @return array<int, string>
+     */
+    protected function heldPermissionNames(): array
+    {
+        return auth()->user()?->getAllPermissions()->pluck('name')->all() ?? [];
+    }
+
+    /**
+     * An icon name (see x-ui.icon) for a permission group's module -
+     * purely decorative. Falls back to x-ui.icon's own default ('grid')
+     * for any module not explicitly mapped here, so a newly seeded
+     * module still renders a reasonable card without needing this list
+     * updated first.
+     */
+    public function moduleIcon(string $module): string
+    {
+        return match ($module) {
+            'users' => 'users',
+            'roles' => 'shield',
+            'settings' => 'settings',
+            'notifications' => 'bell',
+            'activity-log' => 'clock',
+            'media' => 'upload-cloud',
+            default => 'grid',
+        };
+    }
+
+    /**
+     * A short, friendly label for a permission's route-derived `section`
+     * (e.g. 'index' -> 'View', 'destroy' -> 'Delete') - purely a display
+     * transform, the underlying section/permission name is unchanged.
+     * Falls back to a headline-cased version of the raw section for
+     * anything not explicitly mapped, so a new route action still renders
+     * reasonably without needing this list updated first.
+     */
+    public function sectionLabel(?string $section): string
+    {
+        return match ($section) {
+            'index' => 'View',
+            'create' => 'Create',
+            'edit' => 'Edit',
+            'update' => 'Update',
+            'destroy' => 'Delete',
+            'export' => 'Export',
+            'import' => 'Import',
+            default => Str::headline((string) $section),
+        };
+    }
+
     public function render(): View
     {
         return view('livewire.admin.roles.role-form', [
             'permissionGroups' => $this->permissionGroups(),
+            'heldPermissions' => $this->heldPermissionNames(),
         ]);
     }
 }

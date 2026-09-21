@@ -20,19 +20,33 @@ interface LifecycleAware extends LifecycleStatusAware
      *
      * - exclusive / hierarchical, downward (this model cascades to a
      *   relation it owns): ['type', 'relation' (a hasMany/hasOne/
-     *   morphMany method name), 'cascade' (list of 'deactivate'|'delete',
-     *   optional, defaults to both), 'restore_strategy' (optional,
-     *   defaults to config)].
+     *   morphMany method name), 'cascade' (list of 'activate'|
+     *   'deactivate'|'delete', optional, defaults to ['deactivate',
+     *   'delete'] - 'activate' is opt-in only, see cascadeActivated()),
+     *   'restore_strategy' (optional, defaults to config), 'retain'
+     *   (optional bool, default false - blocks a force-delete cascade
+     *   from reaching this relationship's children at all, throwing
+     *   RetainedRecordException; for historical/financial/audit records
+     *   that must never be permanently destroyable, see Core Business
+     *   Rule 2/6)].
      * - exclusive / hierarchical, upward (this model is guarded against
      *   its own owner): ['type', 'parent_relation' (a belongsTo method
-     *   name)]. A model can declare this alongside its own downward
-     *   entries to chain into a multi-level hierarchy - the ancestor
-     *   walk follows parent_relation as far as it's declared.
+     *   name), 'retain' (optional bool - this model itself must never be
+     *   force-deleted, directly or via cascade)]. A model can declare
+     *   this alongside its own downward entries to chain into a
+     *   multi-level hierarchy - the ancestor walk follows parent_relation
+     *   as far as it's declared.
      * - shared: ['type', 'relation' (a belongsToMany/morphToMany method
      *   name), 'orphan_strategy' (optional, defaults to config)].
      * - self_referential: ['type', 'parent_relation' (optional, defaults
      *   to 'parent'), 'deletion_strategy' (optional, defaults to config,
-     *   overridable per-call)].
+     *   overridable per-call - see App\Enums\DeletionStrategy for all
+     *   three: promote_children, delete_subtree,
+     *   block_if_children_exist), 'cascade' (optional, only meaningful
+     *   value is ['activate'] - opts a self-referential subtree into
+     *   cascading activation the same way it already always cascades
+     *   deactivate/delete), 'retain' (optional bool, same meaning as the
+     *   downward key above, applied to this relationship's children)].
      *
      * @return array<string, array<string, mixed>>
      */

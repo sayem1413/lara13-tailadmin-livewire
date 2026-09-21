@@ -42,6 +42,13 @@ const presets = {
         confirmButtonText: 'Deactivate',
         confirmButtonColor: '#d92d20',
     },
+    'reduce-permissions': {
+        title: 'Save with fewer permissions?',
+        text: 'This role is losing one or more permissions - anyone holding it will lose that access immediately.',
+        icon: 'warning',
+        confirmButtonText: 'Save anyway',
+        confirmButtonColor: '#d92d20',
+    },
     logout: {
         title: 'Log out?',
         text: 'You will need to sign in again to continue.',

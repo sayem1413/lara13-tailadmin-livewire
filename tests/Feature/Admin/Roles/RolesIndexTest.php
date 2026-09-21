@@ -81,6 +81,54 @@ it('refuses to delete a role that still has users assigned', function () {
     expect(Role::find($role->id))->not->toBeNull();
 });
 
+it('toggles a role between active and inactive without touching its permissions', function () {
+    Permission::findOrCreate('admin.roles.edit');
+    Permission::findOrCreate('some.permission');
+
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.roles.edit');
+
+    $role = Role::findOrCreate('Editor');
+    $role->givePermissionTo('some.permission');
+
+    Livewire::actingAs($actor)
+        ->test(RolesIndex::class)
+        ->call('toggleActive', $role->id);
+
+    expect($role->refresh()->is_active)->toBeFalse()
+        ->and($role->permissions->pluck('name')->all())->toBe(['some.permission']);
+
+    Livewire::actingAs($actor)
+        ->test(RolesIndex::class)
+        ->call('toggleActive', $role->id);
+
+    expect($role->refresh()->is_active)->toBeTrue();
+});
+
+it('forbids toggling a role\'s active status without the admin.roles.edit permission', function () {
+    $actor = User::factory()->create();
+    $role = Role::findOrCreate('Editor');
+
+    Livewire::actingAs($actor)
+        ->test(RolesIndex::class)
+        ->call('toggleActive', $role->id)
+        ->assertForbidden();
+});
+
+it('refuses to toggle the Super Admin role\'s active status even for a Super Admin actor', function () {
+    Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->assignRole('Super Admin');
+
+    Livewire::actingAs($actor)
+        ->test(RolesIndex::class)
+        ->call('toggleActive', Role::findByName('Super Admin')->id)
+        ->assertDispatched('toast', function (string $name, array $params) {
+            return $params['type'] === 'error' && str_contains($params['message'], 'Super Admin role cannot be modified');
+        });
+});
+
 it('refuses to delete the Super Admin role even for a Super Admin actor', function () {
     Role::findOrCreate('Super Admin');
 

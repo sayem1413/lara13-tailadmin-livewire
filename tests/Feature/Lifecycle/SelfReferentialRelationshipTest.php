@@ -2,11 +2,16 @@
 
 use App\Enums\DeletionStrategy;
 use App\Enums\LifecycleStatus;
+use App\Exceptions\Lifecycle\ChildrenExistException;
 use App\Exceptions\Lifecycle\CircularReferenceException;
+use App\Exceptions\Lifecycle\RetainedRecordException;
+use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Lifecycle\Models\LifecycleDemoFolder;
 
 beforeEach(function () {
     LifecycleDemoFolder::$deletionStrategy = 'delete_subtree';
+    LifecycleDemoFolder::$childrenCascade = [];
+    LifecycleDemoFolder::$childrenRetained = false;
 });
 
 it('recursively cascades deactivation down the entire subtree', function () {
@@ -91,4 +96,95 @@ it('allows re-parenting to an unrelated node and keeps the closure table correct
 
     expect($child->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active)
         ->and($grandchild->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active);
+});
+
+it('blocks deleting a node under block_if_children_exist while it still has a child', function () {
+    LifecycleDemoFolder::$deletionStrategy = 'block_if_children_exist';
+
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+
+    expect(fn () => lifecycleService()->deleteNode($root))
+        ->toThrow(ChildrenExistException::class);
+
+    expect($root->refresh()->trashed())->toBeFalse();
+});
+
+it('allows deleting a childless node under block_if_children_exist', function () {
+    LifecycleDemoFolder::$deletionStrategy = 'block_if_children_exist';
+
+    $leaf = LifecycleDemoFolder::create(['name' => 'Leaf']);
+
+    lifecycleService()->deleteNode($leaf);
+
+    expect($leaf->refresh()->trashed())->toBeTrue();
+});
+
+it('does not cascade activation down a self-referential subtree by default', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child', 'lifecycle_status' => 'inactive']);
+
+    lifecycleService()->deactivate($root);
+    lifecycleService()->activate($root);
+
+    expect($child->refresh()->lifecycle_status)->toBe(LifecycleStatus::Inactive);
+});
+
+it('cascades activation down a self-referential subtree when explicitly opted in', function () {
+    LifecycleDemoFolder::$childrenCascade = ['activate'];
+
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+    $grandchild = LifecycleDemoFolder::create(['parent_id' => $child->id, 'name' => 'Grandchild']);
+
+    lifecycleService()->deactivate($root);
+    lifecycleService()->activate($root);
+
+    expect($child->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active)
+        ->and($grandchild->refresh()->lifecycle_status)->toBe(LifecycleStatus::Active);
+});
+
+it('blocks a force-delete cascade from reaching a self-referential subtree marked retain', function () {
+    LifecycleDemoFolder::$childrenRetained = true;
+
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+
+    expect(fn () => lifecycleService()->forceDelete($root))
+        ->toThrow(RetainedRecordException::class);
+
+    expect(LifecycleDemoFolder::withTrashed()->find($root->id))->not->toBeNull()
+        ->and(LifecycleDemoFolder::withTrashed()->find($child->id))->not->toBeNull();
+});
+
+it('re-reads the prospective new parent with a lock before allowing a re-parent via reparent()', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $other = LifecycleDemoFolder::create(['name' => 'Other']);
+
+    $selects = 0;
+    DB::listen(function ($query) use (&$selects): void {
+        if (str_contains($query->sql, 'lifecycle_demo_folders') && str_starts_with(trim($query->sql), 'select')) {
+            $selects++;
+        }
+    });
+
+    lifecycleService()->reparent($other, $root);
+
+    // One locked re-read of $other's own row (lockRow()) plus one locked
+    // read of $root as the prospective new parent - same SQLite caveat
+    // as every other lockForUpdate() test in this module: this proves
+    // the locked read happens, not that a real lock is held (see
+    // ConcurrencyAndAuditTest).
+    expect($selects)->toBeGreaterThanOrEqual(2)
+        ->and($other->refresh()->parent_id)->toBe($root->id);
+});
+
+it('reparent() still runs the same circular-reference guard as a direct update() call', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+
+    expect(fn () => lifecycleService()->reparent($root, $child))
+        ->toThrow(CircularReferenceException::class);
+
+    expect($root->refresh()->parent_id)->toBeNull();
 });

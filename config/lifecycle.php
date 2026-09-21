@@ -24,8 +24,11 @@ return [
     |
     | A cascade whose estimated affected-row count is below this number
     | runs synchronously, inside the triggering request's transaction. At
-    | or above it, LifecycleIntegrityService dispatches a queued,
-    | chunked Bus::batch() instead (see "queue" below).
+    | or above it, LifecycleIntegrityService dispatches a single queued,
+    | chunked CascadeLifecycleActionJob instead (see "queue" below) -
+    | that job runs OUTSIDE the triggering transaction, so only the
+    | synchronous path below this threshold is fully atomic (see
+    | docs/lifecycle-integrity.md's "Flagged decisions").
     |
     */
     'bulk_threshold' => (int) env('LIFECYCLE_BULK_THRESHOLD', 500),
