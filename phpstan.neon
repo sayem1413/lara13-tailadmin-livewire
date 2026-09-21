@@ -9,6 +9,7 @@ parameters:
         - config/
         - database/
         - routes/
+        - tests/Fixtures/
 
     # Spatie's own published stub references Media Library Pro's optional
     # TemporaryUpload model, which isn't installed and isn't needed unless

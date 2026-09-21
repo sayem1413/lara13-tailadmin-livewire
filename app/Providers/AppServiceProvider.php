@@ -25,6 +25,7 @@ use App\Repositories\Interfaces\Permission\PermissionRepositoryInterface;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
+use App\Services\Lifecycle\LifecycleIntegrityService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(NotificationPreferenceRepositoryInterface::class, NotificationPreferenceRepository::class);
         $this->app->bind(MediaRepositoryInterface::class, MediaRepository::class);
+
+        // Singleton: the cascading flag in LifecycleIntegrityService must
+        // be shared across every guard/cascade call within one triggering
+        // action's call stack (see the class docblock).
+        $this->app->singleton(LifecycleIntegrityService::class);
     }
 
     /**
@@ -73,6 +79,16 @@ class AppServiceProvider extends ServiceProvider
             EnsureUserIsActive::class,
             EnsureApplicationIsNotInMaintenanceMode::class,
         ]);
+
+        // Fixture tables for the Entity Lifecycle module's own test suite
+        // (see docs/lifecycle-integrity.md) - kept out of the real
+        // database/migrations directory since they're not part of the
+        // application's actual schema. Must be registered during boot
+        // (before RefreshDatabase's migrate:fresh runs), not from the
+        // test case itself.
+        if ($this->app->runningUnitTests()) {
+            $this->loadMigrationsFrom(base_path('tests/Fixtures/Lifecycle/migrations'));
+        }
     }
 
     /**
