@@ -6,6 +6,7 @@ use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class SettingService
 {
@@ -85,9 +86,14 @@ class SettingService
                 // that can't express a semantic format (email, url, ...)
                 // without a matching input type to render - so a field can
                 // declare its own "rules" to override the type-based default.
-                $rules["values.{$key}"] = $field['rules'] ?? match ($field['type']) {
-                    'boolean' => ['boolean'],
-                    'select' => ['nullable', 'string', 'in:'.implode(',', array_keys($field['options'] ?? []))],
+                $rules["values.{$key}"] = $field['rules'] ?? match (true) {
+                    $field['type'] === 'boolean' => ['boolean'],
+                    // A 'select' field with no options would otherwise build
+                    // 'in:' with zero allowed values, which rejects every
+                    // submission unconditionally with no indication the real
+                    // problem is a config/settings.php typo.
+                    $field['type'] === 'select' && ! empty($field['options']) => ['nullable', 'string', 'in:'.implode(',', array_keys($field['options']))],
+                    $field['type'] === 'select' => throw new InvalidArgumentException("Setting \"{$key}\" is declared as type 'select' but has no 'options'."),
                     default => ['nullable', 'string', 'max:2000'],
                 };
             }

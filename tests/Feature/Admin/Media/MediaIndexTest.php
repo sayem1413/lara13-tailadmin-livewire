@@ -89,6 +89,41 @@ it('rejects a file whose content is sniffed as disallowed even with an allowed e
     expect(LibraryAsset::count())->toBe(0);
 });
 
+it('sniffs and rejects a disguised SVG payload smuggled inside a plain-text upload, even though its extension and content-sniffed MIME type are both allowed', function () {
+    Storage::fake('public');
+
+    Permission::findOrCreate('admin.media.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.media.index');
+
+    $path = tempnam(sys_get_temp_dir(), 'upload');
+    // finfo sniffs this as plain text/plain (an allowed mimetype under the
+    // allowed .txt extension) precisely because the leading prose keeps it
+    // from being recognized as image/svg+xml - which is exactly what would
+    // let it slip past MediaService::isSvg()'s extension/MIME checks and
+    // get stored completely unsanitized, script tag and all.
+    file_put_contents($path, "Meeting notes for Q3 planning.\nAttendees: Alice, Bob.\n<svg onload=alert(1)></svg>");
+
+    $file = new class($path, 'notes.txt', 'text/plain', null, true) extends UploadedFile
+    {
+        public $name;
+
+        public function __construct($path, $originalName, $mimeType, $error, $test)
+        {
+            parent::__construct($path, $originalName, $mimeType, $error, $test);
+
+            $this->name = $originalName;
+        }
+    };
+
+    Livewire::actingAs($actor)
+        ->test(MediaIndex::class)
+        ->set('newFile', $file)
+        ->assertHasErrors(['newFile']);
+
+    expect(LibraryAsset::count())->toBe(0);
+});
+
 it('uploads a well-formed SVG and stores its sanitized content', function () {
     Storage::fake('public');
 

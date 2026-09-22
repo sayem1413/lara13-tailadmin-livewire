@@ -55,7 +55,15 @@ class RoleService
         if ($permissions !== null) {
             $permissions = $this->expandPermissions($permissions);
 
-            $this->guardAgainstUnassignablePermissions($permissions);
+            // Only permissions being newly added need the escalation check -
+            // the form always resubmits the role's full permission set even
+            // when the actor only touched its name/description/is_active, so
+            // guarding the whole set would block an unrelated edit to a role
+            // that already (legitimately) carries a permission the acting
+            // user doesn't personally hold.
+            $addedPermissions = array_diff($permissions, $role->permissions->pluck('name')->all());
+
+            $this->guardAgainstUnassignablePermissions($addedPermissions);
         }
 
         return DB::transaction(function () use ($role, $data, $permissions) {

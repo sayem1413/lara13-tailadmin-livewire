@@ -8,6 +8,8 @@ use App\Services\SettingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SettingController extends Controller
 {
@@ -26,7 +28,13 @@ class SettingController extends Controller
     {
         Gate::authorize('admin.settings.update');
 
-        $this->settingService->setMany($request->validated()['values'] ?? []);
+        try {
+            $this->settingService->setMany($request->validated()['values'] ?? []);
+        } catch (Throwable $exception) {
+            Log::error('Failed to save settings.', ['exception' => $exception]);
+
+            return redirect()->route('admin.settings.edit')->with('error', 'Something went wrong while saving settings. Please try again.');
+        }
 
         return redirect()->route('admin.settings.edit')->with('success', 'Settings updated successfully.');
     }

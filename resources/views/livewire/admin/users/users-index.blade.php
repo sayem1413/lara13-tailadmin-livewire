@@ -125,16 +125,18 @@
                                             </button>
                                         @endcan
                                         @can('forceDelete', $user)
-                                            <button
-                                                type="button"
-                                                wire:click="forceDeleteUser({{ $user->id }})"
-                                                data-confirm="force-delete"
-                                                data-confirm-entity="User"
-                                                data-confirm-name="{{ $user->name }}"
-                                                class="font-medium text-red-600 hover:underline dark:text-red-400"
-                                            >
-                                                Force Delete
-                                            </button>
+                                            @if ($user->id !== auth()->id())
+                                                <button
+                                                    type="button"
+                                                    wire:click="forceDeleteUser({{ $user->id }})"
+                                                    data-confirm="force-delete"
+                                                    data-confirm-entity="User"
+                                                    data-confirm-name="{{ $user->name }}"
+                                                    class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                                >
+                                                    Force Delete
+                                                </button>
+                                            @endif
                                         @endcan
                                     @else
                                         @can('update', $user)
@@ -146,16 +148,18 @@
                                             <a href="{{ route('admin.users.edit', $user) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
                                         @endcan
                                         @can('delete', $user)
-                                            <button
-                                                type="button"
-                                                wire:click="delete({{ $user->id }})"
-                                                data-confirm="delete"
-                                                data-confirm-entity="User"
-                                                data-confirm-name="{{ $user->name }}"
-                                                class="font-medium text-red-600 hover:underline dark:text-red-400"
-                                            >
-                                                Delete
-                                            </button>
+                                            @if ($user->id !== auth()->id())
+                                                <button
+                                                    type="button"
+                                                    wire:click="delete({{ $user->id }})"
+                                                    data-confirm="delete"
+                                                    data-confirm-entity="User"
+                                                    data-confirm-name="{{ $user->name }}"
+                                                    class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                                >
+                                                    Delete
+                                                </button>
+                                            @endif
                                         @endcan
                                     @endif
                                 </div>
@@ -174,7 +178,9 @@
         <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
             @forelse ($users as $user)
                 <div wire:key="user-mobile-{{ $user->id }}" class="flex gap-3 p-4">
-                    <x-forms.checkbox class="mt-1" wire:model.live="selected" value="{{ $user->id }}" />
+                    <label class="flex min-h-11 items-start pt-1">
+                        <x-forms.checkbox wire:model.live="selected" value="{{ $user->id }}" />
+                    </label>
 
                     <div class="min-w-0 flex-1">
                         <div class="flex items-start justify-between gap-2">
@@ -205,16 +211,18 @@
                                     </button>
                                 @endcan
                                 @can('forceDelete', $user)
-                                    <button
-                                        type="button"
-                                        wire:click="forceDeleteUser({{ $user->id }})"
-                                        data-confirm="force-delete"
-                                        data-confirm-entity="User"
-                                        data-confirm-name="{{ $user->name }}"
-                                        class="min-h-11 font-medium text-red-600 dark:text-red-400"
-                                    >
-                                        Force Delete
-                                    </button>
+                                    @if ($user->id !== auth()->id())
+                                        <button
+                                            type="button"
+                                            wire:click="forceDeleteUser({{ $user->id }})"
+                                            data-confirm="force-delete"
+                                            data-confirm-entity="User"
+                                            data-confirm-name="{{ $user->name }}"
+                                            class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                                        >
+                                            Force Delete
+                                        </button>
+                                    @endif
                                 @endcan
                             @else
                                 @can('update', $user)
@@ -226,16 +234,18 @@
                                     <a href="{{ route('admin.users.edit', $user) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
                                 @endcan
                                 @can('delete', $user)
-                                    <button
-                                        type="button"
-                                        wire:click="delete({{ $user->id }})"
-                                        data-confirm="delete"
-                                        data-confirm-entity="User"
-                                        data-confirm-name="{{ $user->name }}"
-                                        class="min-h-11 font-medium text-red-600 dark:text-red-400"
-                                    >
-                                        Delete
-                                    </button>
+                                    @if ($user->id !== auth()->id())
+                                        <button
+                                            type="button"
+                                            wire:click="delete({{ $user->id }})"
+                                            data-confirm="delete"
+                                            data-confirm-entity="User"
+                                            data-confirm-name="{{ $user->name }}"
+                                            class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                                        >
+                                            Delete
+                                        </button>
+                                    @endif
                                 @endcan
                             @endif
                         </div>

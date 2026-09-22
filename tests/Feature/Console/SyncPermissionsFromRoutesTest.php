@@ -66,3 +66,11 @@ it('is safe to run twice without duplicating permissions', function () {
 
     expect(Permission::query()->where('name', 'admin.users.index')->count())->toBe(1);
 });
+
+it('does not delete a manually-seeded permission that has no route of its own', function () {
+    Permission::create(['name' => 'admin.users.export', 'guard_name' => 'web']);
+
+    $this->artisan('permissions:sync');
+
+    expect(Permission::query()->where('name', 'admin.users.export')->exists())->toBeTrue();
+});

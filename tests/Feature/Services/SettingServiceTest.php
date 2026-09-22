@@ -24,3 +24,26 @@ it('reflects a value updated after it was already cached', function () {
 
     expect($service->get('app_name'))->toBe('Second');
 });
+
+it("builds an 'in' rule from a select field's configured options", function () {
+    config(['settings' => [
+        'general' => ['label' => 'General', 'fields' => [
+            'theme' => ['type' => 'select', 'label' => 'Theme', 'options' => ['light' => 'Light', 'dark' => 'Dark']],
+        ]],
+    ]]);
+
+    expect(app(SettingService::class)->validationRules())->toBe([
+        'values.theme' => ['nullable', 'string', 'in:light,dark'],
+    ]);
+});
+
+it('throws a clear configuration error for a select field declared with no options, instead of silently rejecting every submission', function () {
+    config(['settings' => [
+        'general' => ['label' => 'General', 'fields' => [
+            'theme' => ['type' => 'select', 'label' => 'Theme'],
+        ]],
+    ]]);
+
+    expect(fn () => app(SettingService::class)->validationRules())
+        ->toThrow(InvalidArgumentException::class, 'theme');
+});

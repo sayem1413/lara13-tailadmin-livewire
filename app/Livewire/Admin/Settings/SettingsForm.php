@@ -5,7 +5,9 @@ namespace App\Livewire\Admin\Settings;
 use App\Services\SettingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
+use Throwable;
 
 class SettingsForm extends Component
 {
@@ -37,7 +39,15 @@ class SettingsForm extends Component
 
         $validated = $this->validate();
 
-        $settings->setMany($validated['values']);
+        try {
+            $settings->setMany($validated['values']);
+        } catch (Throwable $exception) {
+            Log::error('Failed to save settings.', ['exception' => $exception]);
+
+            $this->dispatch('toast', type: 'error', message: 'Something went wrong while saving settings. Please try again.');
+
+            return;
+        }
 
         // save() doesn't redirect - it re-renders this same page - so a
         // session flash would never be seen: nothing triggers a fresh page

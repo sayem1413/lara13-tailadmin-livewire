@@ -34,6 +34,30 @@ class Permission extends SpatiePermission
      */
     public const IMPLIED_SECTIONS = ['index', 'show'];
 
+    /**
+     * Permissions for actions that have no dedicated route of their own -
+     * a Livewire-only method such as an index page's export/import button
+     * or a settings form's save action. Named in the same
+     * admin.<module>.<section> shape SyncPermissionsFromRoutes produces, so
+     * IMPLYING_SECTIONS/IMPLIED_SECTIONS treats these the same as a
+     * route-backed permission.
+     *
+     * Kept here (rather than only in RolesAndPermissionsSeeder) so
+     * SyncPermissionsFromRoutes can recognize these as valid and exclude
+     * them from its "delete anything whose route no longer exists" cleanup
+     * pass - they never had a route to begin with, so without this they
+     * look identical to a genuinely stale permission and get deleted (along
+     * with every role assignment referencing them) the moment
+     * `permissions:sync` is re-run against an already-provisioned install.
+     *
+     * @var array<string, array{module: string, section: string}>
+     */
+    public const MANUAL_PERMISSIONS = [
+        'admin.notifications.preferences.edit' => ['module' => 'notifications', 'section' => 'preferences.edit'],
+        'admin.users.import' => ['module' => 'users', 'section' => 'import'],
+        'admin.users.export' => ['module' => 'users', 'section' => 'export'],
+    ];
+
     protected function casts(): array
     {
         return [

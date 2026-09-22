@@ -286,6 +286,29 @@ it('prevents an actor from force-deleting their own account', function () {
     expect(User::withTrashed()->find($actor->id))->not->toBeNull();
 });
 
+it('prevents a Super Admin from deleting their own account despite Gate::before bypassing the policy', function () {
+    $actor = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate('Super Admin'));
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.destroy', $actor))
+        ->assertSessionHasErrors('user');
+
+    expect($actor->fresh()->trashed())->toBeFalse();
+});
+
+it('prevents a Super Admin from force-deleting their own account despite Gate::before bypassing the policy', function () {
+    $actor = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate('Super Admin'));
+    $actor->delete();
+
+    $this->actingAs($actor)
+        ->delete(route('admin.users.force-delete', $actor))
+        ->assertSessionHasErrors('user');
+
+    expect(User::withTrashed()->find($actor->id))->not->toBeNull();
+});
+
 it("forbids force-deleting a Super Admin's account without the Super Admin role", function () {
     Permission::findOrCreate('admin.users.force-delete');
     Role::findOrCreate('Super Admin');

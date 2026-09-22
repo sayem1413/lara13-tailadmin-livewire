@@ -11,24 +11,6 @@ use Spatie\Permission\PermissionRegistrar;
 class RolesAndPermissionsSeeder extends Seeder
 {
     /**
-     * Permissions for actions that have no dedicated route - see
-     * app/Console/Commands/SyncPermissionsFromRoutes.php, which discovers
-     * permissions from named "admin.*" routes and has no way to see a
-     * Livewire component method such as an index page's delete button or a
-     * settings form's save action. Named in the same admin.<module>.
-     * <section> shape the sync command produces, using its resource-style
-     * section vocabulary, so Permission::IMPLYING_SECTIONS/IMPLIED_SECTIONS
-     * treats these the same as a route-backed permission.
-     *
-     * @var array<string, array{module: string, section: string}>
-     */
-    protected array $manualPermissions = [
-        'admin.notifications.preferences.edit' => ['module' => 'notifications', 'section' => 'preferences.edit'],
-        'admin.users.import' => ['module' => 'users', 'section' => 'import'],
-        'admin.users.export' => ['module' => 'users', 'section' => 'export'],
-    ];
-
-    /**
      * Permissions granted to the "Admin" role in addition to "Super Admin",
      * which bypasses all authorization checks (see AppServiceProvider).
      *
@@ -60,7 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // create/edit for each module currently built.
         Artisan::call('permissions:sync');
 
-        foreach ($this->manualPermissions as $name => $meta) {
+        foreach (Permission::MANUAL_PERMISSIONS as $name => $meta) {
             Permission::updateOrCreate(
                 ['name' => $name, 'guard_name' => 'web'],
                 [

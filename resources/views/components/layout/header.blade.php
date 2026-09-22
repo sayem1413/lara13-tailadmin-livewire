@@ -2,7 +2,7 @@
     <button
         type="button"
         @click="sidebarOpen = !sidebarOpen"
-        class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden dark:text-gray-400 dark:hover:bg-white/5"
+        class="rounded-lg p-3 text-gray-500 hover:bg-gray-100 lg:hidden dark:text-gray-400 dark:hover:bg-white/5"
     >
         <x-ui.icon name="menu" />
         <span class="sr-only">Toggle sidebar</span>
@@ -11,7 +11,7 @@
     <button
         type="button"
         @click="mobileSearchOpen = true"
-        class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 sm:hidden dark:text-gray-400 dark:hover:bg-white/5"
+        class="rounded-lg p-3 text-gray-500 hover:bg-gray-100 sm:hidden dark:text-gray-400 dark:hover:bg-white/5"
     >
         <x-ui.icon name="search" class="size-5" />
         <span class="sr-only">Search</span>
@@ -27,7 +27,7 @@
         <div class="min-w-0 flex-1">
             <livewire:layout.global-search />
         </div>
-        <button type="button" @click="mobileSearchOpen = false" class="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+        <button type="button" @click="mobileSearchOpen = false" class="shrink-0 rounded-lg p-3 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
             <x-ui.icon name="x-mark" class="size-5" />
             <span class="sr-only">Close search</span>
         </button>
@@ -42,7 +42,7 @@
             <button
                 type="button"
                 @click="toggle"
-                class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                class="rounded-lg p-3 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
             >
                 <x-ui.icon name="sun" class="size-5" x-show="!enabled" />
                 <x-ui.icon name="moon" class="size-5" x-show="enabled" x-cloak />

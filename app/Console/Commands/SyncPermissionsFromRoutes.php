@@ -80,6 +80,11 @@ class SyncPermissionsFromRoutes extends Command
             }
         }
 
+        // Manual permissions (see Permission::MANUAL_PERMISSIONS) have no
+        // route of their own by design - without this they'd look
+        // indistinguishable from a stale permission below and get deleted.
+        $validPermissionNames = [...$validPermissionNames, ...array_keys(Permission::MANUAL_PERMISSIONS)];
+
         // Clean up permissions in DB whose routes no longer exist
         $deletedCount = Permission::whereNotIn('name', $validPermissionNames)->delete();
 

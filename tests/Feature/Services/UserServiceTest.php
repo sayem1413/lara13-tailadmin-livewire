@@ -75,3 +75,70 @@ it('does not block an update that leaves roles untouched even if a previously-he
     expect($updated->name)->toBe('Renamed')
         ->and($updated->hasRole('Editor'))->toBeTrue();
 });
+
+it('blocks a user from deleting their own account', function () {
+    $actor = User::factory()->create();
+    $this->actingAs($actor);
+
+    try {
+        app(UserService::class)->deleteUser($actor);
+        test()->fail('Expected UserService::deleteUser() to throw for a self-delete.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('user');
+    }
+
+    expect($actor->fresh()->trashed())->toBeFalse();
+});
+
+it('blocks a user from permanently deleting their own account', function () {
+    $actor = User::factory()->create();
+    $this->actingAs($actor);
+
+    try {
+        app(UserService::class)->forceDeleteUser($actor);
+        test()->fail('Expected UserService::forceDeleteUser() to throw for a self-force-delete.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('user');
+    }
+
+    expect(User::withTrashed()->whereKey($actor->id)->exists())->toBeTrue();
+});
+
+it('blocks removing the Super Admin role from the last remaining Super Admin', function () {
+    $superAdminRole = Role::findOrCreate('Super Admin');
+    $actor = User::factory()->create();
+    $actor->assignRole($superAdminRole);
+    $this->actingAs($actor);
+
+    try {
+        app(UserService::class)->updateUser($actor, [
+            'name' => $actor->name,
+            'email' => $actor->email,
+            'roles' => [],
+        ]);
+        test()->fail('Expected UserService::updateUser() to throw when removing the last Super Admin.');
+    } catch (ValidationException $e) {
+        expect($e->errors())->toHaveKey('roles');
+    }
+
+    expect($actor->fresh()->hasRole('Super Admin'))->toBeTrue();
+});
+
+it('allows removing the Super Admin role when another Super Admin remains', function () {
+    $superAdminRole = Role::findOrCreate('Super Admin');
+
+    $actor = User::factory()->create();
+    $actor->assignRole($superAdminRole);
+    $this->actingAs($actor);
+
+    $anotherSuperAdmin = User::factory()->create();
+    $anotherSuperAdmin->assignRole($superAdminRole);
+
+    $updated = app(UserService::class)->updateUser($anotherSuperAdmin, [
+        'name' => $anotherSuperAdmin->name,
+        'email' => $anotherSuperAdmin->email,
+        'roles' => [],
+    ]);
+
+    expect($updated->hasRole('Super Admin'))->toBeFalse();
+});

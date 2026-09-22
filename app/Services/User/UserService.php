@@ -96,6 +96,7 @@ class UserService
         if ($roles !== null) {
             $this->guardAgainstUnassignableSuperAdminRole($roles);
             $this->guardAgainstInactiveRoleAssignment($roles);
+            $this->guardAgainstRemovingLastSuperAdmin($user, $roles);
         }
 
         if (empty($data['password'])) {
@@ -179,8 +180,17 @@ class UserService
         return $this->userRepository->findOrFail($id, $withTrashed);
     }
 
+    /**
+     * UserPolicy::delete() blocks a user from deleting their own account,
+     * but Gate::before (see AppServiceProvider) bypasses every Policy for a
+     * Super Admin actor - including that self-protection - so a Super Admin
+     * clicking "Delete" on their own row would otherwise soft-delete their
+     * own account and be logged out with no way back in.
+     */
     public function deleteUser(User $user): bool
     {
+        $this->guardAgainstSelfRemoval($user, 'delete your own account');
+
         return $this->userRepository->delete($user);
     }
 
@@ -194,10 +204,51 @@ class UserService
      * up automatically - InteractsWithMedia hooks the model's "deleting"
      * event and calls deleteAllMedia() once forceDeleting is true, so no
      * separate media cleanup is needed here.
+     *
+     * Same Gate::before self-protection gap as deleteUser() - see its
+     * docblock - applies here too, and is even more consequential since
+     * this is irreversible.
      */
     public function forceDeleteUser(User $user): bool
     {
+        $this->guardAgainstSelfRemoval($user, 'permanently delete your own account');
+
         return $this->userRepository->forceDelete($user);
+    }
+
+    protected function guardAgainstSelfRemoval(User $user, string $action): void
+    {
+        if ($user->id === Auth::id()) {
+            throw ValidationException::withMessages([
+                'user' => "You cannot {$action}.",
+            ]);
+        }
+    }
+
+    /**
+     * Gate::before lets a Super Admin bypass every Policy check, including
+     * UserForm's own client-side rendering of which roles are checkable -
+     * so nothing stops a Super Admin from unchecking "Super Admin" on their
+     * own account (or another Super Admin's) through a direct request. If
+     * that's the last account holding the role, every Gate::before check
+     * everywhere in the app permanently loses its bypass condition, with no
+     * remaining Super Admin able to grant it back.
+     *
+     * @param  array<int, string>  $roles
+     */
+    protected function guardAgainstRemovingLastSuperAdmin(User $user, array $roles): void
+    {
+        if (! $user->hasRole('Super Admin') || in_array('Super Admin', $roles, true)) {
+            return;
+        }
+
+        $anotherSuperAdminExists = User::role('Super Admin')->whereKeyNot($user->id)->exists();
+
+        if (! $anotherSuperAdminExists) {
+            throw ValidationException::withMessages([
+                'roles' => 'At least one Super Admin must remain - assign the role to another user first.',
+            ]);
+        }
     }
 
     /**

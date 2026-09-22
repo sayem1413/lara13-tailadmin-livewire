@@ -5,7 +5,9 @@ namespace App\Livewire\Admin\Notifications;
 use App\Services\Notification\NotificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
+use Throwable;
 
 class NotificationPreferencesForm extends Component
 {
@@ -49,7 +51,15 @@ class NotificationPreferencesForm extends Component
 
         $validated = $this->validate();
 
-        $notifications->updatePreferences(auth()->user(), $validated['values'] ?? []);
+        try {
+            $notifications->updatePreferences(auth()->user(), $validated['values'] ?? []);
+        } catch (Throwable $exception) {
+            Log::error('Failed to save notification preferences.', ['exception' => $exception]);
+
+            $this->dispatch('toast', type: 'error', message: 'Something went wrong while saving your notification preferences. Please try again.');
+
+            return;
+        }
 
         $this->dispatch('toast', type: 'success', message: 'Notification preferences updated.');
     }

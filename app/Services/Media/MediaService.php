@@ -67,8 +67,20 @@ class MediaService
 
     protected function isSvg(UploadedFile $file): bool
     {
-        return strtolower((string) $file->getClientOriginalExtension()) === 'svg'
-            || $file->getMimeType() === 'image/svg+xml';
+        if (strtolower((string) $file->getClientOriginalExtension()) === 'svg'
+            || $file->getMimeType() === 'image/svg+xml') {
+            return true;
+        }
+
+        // A disguised SVG (renamed extension, and finfo mis-sniffing a
+        // small/atypical SVG's MIME type as something like text/plain)
+        // would otherwise skip sanitization entirely and persist its raw,
+        // unescaped <script>/on*-handler payload verbatim. Sniff the
+        // leading bytes for an actual <svg> root element regardless of
+        // what the extension or reported MIME type claims.
+        $head = (string) @file_get_contents($file->getRealPath(), false, null, 0, 2048);
+
+        return (bool) preg_match('/<svg\b/i', $head);
     }
 
     public function findOrFail(int $id): LibraryAsset

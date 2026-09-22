@@ -20,7 +20,7 @@ class MediaRepository implements MediaRepositoryInterface
      */
     public function paginate(?string $search = null, int $perPage = 24): LengthAwarePaginator
     {
-        $query = $this->model->query()->with(['media', 'uploader'])->latest();
+        $query = $this->model->query()->with('media')->latest();
 
         if (! empty($search)) {
             $query->whereHas('media', function (Builder $query) use ($search) {
