@@ -46,4 +46,35 @@ return [
         ],
     ],
 
+    'ecommerce' => [
+        'label' => 'E-commerce',
+        'fields' => [
+            'tax_rate' => [
+                'label' => 'Default VAT / Tax Rate (%)',
+                'type' => 'text',
+                'input_type' => 'number',
+                'default' => '0',
+                'rules' => ['required', 'numeric', 'min:0', 'max:100'],
+            ],
+            'low_stock_threshold' => [
+                'label' => 'Low Stock Threshold',
+                'type' => 'text',
+                'input_type' => 'number',
+                'default' => '10',
+                'rules' => ['required', 'integer', 'min:0'],
+            ],
+            'allow_negative_stock' => [
+                'label' => 'Allow Negative Stock',
+                'type' => 'boolean',
+                'default' => false,
+            ],
+            'sku_prefix' => [
+                'label' => 'SKU Prefix',
+                'type' => 'text',
+                'default' => 'SKU',
+                'rules' => ['nullable', 'string', 'max:10'],
+            ],
+        ],
+    ],
+
 ];

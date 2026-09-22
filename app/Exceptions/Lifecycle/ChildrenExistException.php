@@ -3,7 +3,6 @@
 namespace App\Exceptions\Lifecycle;
 
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Thrown by deleteNode() under the `block_if_children_exist` deletion
@@ -12,7 +11,7 @@ use RuntimeException;
  * `promote_children`/`delete_subtree` instead) before this node can be
  * removed.
  */
-class ChildrenExistException extends RuntimeException
+class ChildrenExistException extends LifecycleGuardException
 {
     public static function make(Model $node): self
     {

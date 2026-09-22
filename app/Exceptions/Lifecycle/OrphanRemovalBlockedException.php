@@ -3,13 +3,12 @@
 namespace App\Exceptions\Lifecycle;
 
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Thrown by the 'prevent_removal' orphan strategy when detaching a
  * shared (many-to-many) child from its last remaining parent.
  */
-class OrphanRemovalBlockedException extends RuntimeException
+class OrphanRemovalBlockedException extends LifecycleGuardException
 {
     public static function make(Model $child, string $relation): self
     {

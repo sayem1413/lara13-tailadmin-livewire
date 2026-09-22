@@ -8,20 +8,26 @@ use App\Models\Permission\Role;
 use App\Models\User;
 use App\Policies\RolePolicy;
 use App\Repositories\Eloquent\ActivityLog\ActivityLogRepository;
+use App\Repositories\Eloquent\Category\CategoryRepository;
 use App\Repositories\Eloquent\Dashboard\DashboardRepository;
+use App\Repositories\Eloquent\Inventory\StockMovementRepository;
 use App\Repositories\Eloquent\Media\MediaRepository;
 use App\Repositories\Eloquent\Notification\NotificationPreferenceRepository;
 use App\Repositories\Eloquent\Notification\NotificationRepository;
 use App\Repositories\Eloquent\Permission\PermissionRepository;
+use App\Repositories\Eloquent\Product\ProductRepository;
 use App\Repositories\Eloquent\Role\RoleRepository;
 use App\Repositories\Eloquent\Setting\SettingRepository;
 use App\Repositories\Eloquent\User\UserRepository;
 use App\Repositories\Interfaces\ActivityLog\ActivityLogRepositoryInterface;
+use App\Repositories\Interfaces\Category\CategoryRepositoryInterface;
 use App\Repositories\Interfaces\Dashboard\DashboardRepositoryInterface;
+use App\Repositories\Interfaces\Inventory\StockMovementRepositoryInterface;
 use App\Repositories\Interfaces\Media\MediaRepositoryInterface;
 use App\Repositories\Interfaces\Notification\NotificationPreferenceRepositoryInterface;
 use App\Repositories\Interfaces\Notification\NotificationRepositoryInterface;
 use App\Repositories\Interfaces\Permission\PermissionRepositoryInterface;
+use App\Repositories\Interfaces\Product\ProductRepositoryInterface;
 use App\Repositories\Interfaces\Role\RoleRepositoryInterface;
 use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
 use App\Repositories\Interfaces\User\UserRepositoryInterface;
@@ -50,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(NotificationPreferenceRepositoryInterface::class, NotificationPreferenceRepository::class);
         $this->app->bind(MediaRepositoryInterface::class, MediaRepository::class);
+        $this->app->bind(CategoryRepositoryInterface::class, CategoryRepository::class);
+        $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
+        $this->app->bind(StockMovementRepositoryInterface::class, StockMovementRepository::class);
 
         // Singleton: the cascading flag in LifecycleIntegrityService must
         // be shared across every guard/cascade call within one triggering

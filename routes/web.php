@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\NotificationPreferenceController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
@@ -68,6 +71,25 @@ Route::middleware(['auth', 'active', 'maintenance'])->name('admin.')->group(func
     Route::resource('roles', RoleController::class)->only([
         'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
     ]);
+
+    Route::resource('categories', CategoryController::class)->only([
+        'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
+    ]);
+    Route::put('/categories/{category}/restore', [CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
+    Route::delete('/categories/{category}/force-delete', [CategoryController::class, 'forceDelete'])->name('categories.force-delete')->withTrashed();
+
+    Route::resource('products', ProductController::class)->only([
+        'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
+    ]);
+    Route::put('/products/{product}/restore', [ProductController::class, 'restore'])->name('products.restore')->withTrashed();
+    Route::delete('/products/{product}/force-delete', [ProductController::class, 'forceDelete'])->name('products.force-delete')->withTrashed();
+
+    // Real named routes (not Livewire-only) so admin.inventory.adjust is
+    // discovered by SyncPermissionsFromRoutes the same way every other
+    // permission in this app is - see the comment on the resource
+    // controllers above.
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::post('/inventory/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
 
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
 

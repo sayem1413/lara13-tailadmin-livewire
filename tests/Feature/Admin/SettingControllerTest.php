@@ -8,7 +8,9 @@ it('forbids updating settings without the admin.settings.update permission', fun
     $actor = User::factory()->create();
 
     $this->actingAs($actor)
-        ->put(route('admin.settings.update'), ['values' => ['app_name' => 'New Name']])
+        ->put(route('admin.settings.update'), [
+            'values' => ['app_name' => 'New Name', 'tax_rate' => '15', 'low_stock_threshold' => '10'],
+        ])
         ->assertForbidden();
 });
 
@@ -23,6 +25,8 @@ it('persists submitted values through the setting service', function () {
                 'app_name' => 'New App Name',
                 'support_email' => 'support@example.com',
                 'maintenance_mode' => true,
+                'tax_rate' => '15',
+                'low_stock_threshold' => '10',
             ],
         ])
         ->assertRedirect(route('admin.settings.edit'));

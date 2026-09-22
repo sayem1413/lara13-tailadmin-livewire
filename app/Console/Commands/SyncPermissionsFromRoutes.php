@@ -43,6 +43,12 @@ class SyncPermissionsFromRoutes extends Command
         'admin.roles.store',
         'admin.roles.show',
         'admin.roles.update',
+        'admin.categories.store',
+        'admin.categories.show',
+        'admin.categories.update',
+        'admin.products.store',
+        'admin.products.show',
+        'admin.products.update',
     ];
 
     /**

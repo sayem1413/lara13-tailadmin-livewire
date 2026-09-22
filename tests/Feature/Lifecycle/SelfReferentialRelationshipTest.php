@@ -5,6 +5,7 @@ use App\Enums\LifecycleStatus;
 use App\Exceptions\Lifecycle\ChildrenExistException;
 use App\Exceptions\Lifecycle\CircularReferenceException;
 use App\Exceptions\Lifecycle\RetainedRecordException;
+use App\Services\Lifecycle\ClosureTableManager;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Lifecycle\Models\LifecycleDemoFolder;
 
@@ -187,4 +188,44 @@ it('reparent() still runs the same circular-reference guard as a direct update()
         ->toThrow(CircularReferenceException::class);
 
     expect($root->refresh()->parent_id)->toBeNull();
+});
+
+it('descendantIds() returns the whole subtree, with and without the node itself', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+    $grandchild = LifecycleDemoFolder::create(['parent_id' => $child->id, 'name' => 'Grandchild']);
+    $unrelated = LifecycleDemoFolder::create(['name' => 'Unrelated']);
+
+    $manager = app(ClosureTableManager::class);
+
+    expect($manager->descendantIds($root))
+        ->toEqualCanonicalizing([$root->id, $child->id, $grandchild->id])
+        ->and($manager->descendantIds($root, includeSelf: false))
+        ->toEqualCanonicalizing([$child->id, $grandchild->id])
+        ->and($manager->descendantIds($unrelated))
+        ->toBe([$unrelated->id]);
+});
+
+it('descendantIds() reflects a re-parent immediately', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+    $otherRoot = LifecycleDemoFolder::create(['name' => 'Other']);
+
+    $child->update(['parent_id' => $otherRoot->id]);
+
+    $manager = app(ClosureTableManager::class);
+
+    expect($manager->descendantIds($root, includeSelf: false))->toBe([])
+        ->and($manager->descendantIds($otherRoot, includeSelf: false))->toBe([$child->id]);
+});
+
+it('ancestorIds() returns every ancestor ordered furthest-first, excluding the node itself', function () {
+    $root = LifecycleDemoFolder::create(['name' => 'Root']);
+    $child = LifecycleDemoFolder::create(['parent_id' => $root->id, 'name' => 'Child']);
+    $grandchild = LifecycleDemoFolder::create(['parent_id' => $child->id, 'name' => 'Grandchild']);
+
+    $manager = app(ClosureTableManager::class);
+
+    expect($manager->ancestorIds($grandchild))->toBe([$root->id, $child->id])
+        ->and($manager->ancestorIds($root))->toBe([]);
 });

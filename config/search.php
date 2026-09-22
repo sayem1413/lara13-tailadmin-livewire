@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\User;
 
 /*
@@ -29,6 +31,26 @@ return [
             'route' => 'admin.users.show',
             'route_param' => 'user',
             'permission' => 'admin.users.index',
+        ],
+        [
+            'label' => 'Products',
+            'model' => Product::class,
+            'columns' => ['name', 'sku', 'barcode'],
+            'title' => 'name',
+            'description' => 'sku',
+            'route' => 'admin.products.show',
+            'route_param' => 'product',
+            'permission' => 'admin.products.index',
+        ],
+        [
+            'label' => 'Categories',
+            'model' => Category::class,
+            'columns' => ['name', 'slug'],
+            'title' => 'name',
+            'description' => 'slug',
+            'route' => 'admin.categories.show',
+            'route_param' => 'category',
+            'permission' => 'admin.categories.index',
         ],
     ],
 

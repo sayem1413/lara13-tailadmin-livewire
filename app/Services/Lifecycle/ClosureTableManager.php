@@ -119,4 +119,42 @@ class ClosureTableManager
             ->where('descendant_id', $node->getKey())
             ->exists();
     }
+
+    /**
+     * Every id in $node's own subtree (itself plus every descendant at
+     * any depth), read straight from the closure table rather than a
+     * recursive relation walk.
+     *
+     * @return array<int, int|string>
+     */
+    public function descendantIds(Model $node, bool $includeSelf = true): array
+    {
+        $query = DB::table(self::TABLE)
+            ->where('closureable_type', $node::class)
+            ->where('ancestor_id', $node->getKey());
+
+        if (! $includeSelf) {
+            $query->where('descendant_id', '!=', $node->getKey());
+        }
+
+        return $query->pluck('descendant_id')->all();
+    }
+
+    /**
+     * Every ancestor id of $node (not including itself), ordered from
+     * furthest to nearest - the shape breadcrumbs need ("Root > ... >
+     * immediate parent").
+     *
+     * @return array<int, int|string>
+     */
+    public function ancestorIds(Model $node): array
+    {
+        return DB::table(self::TABLE)
+            ->where('closureable_type', $node::class)
+            ->where('descendant_id', $node->getKey())
+            ->where('ancestor_id', '!=', $node->getKey())
+            ->orderByDesc('depth')
+            ->pluck('ancestor_id')
+            ->all();
+    }
 }

@@ -3,7 +3,6 @@
 namespace App\Exceptions\Lifecycle;
 
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Thrown when an action would leave a record active while its direct
@@ -15,7 +14,7 @@ use RuntimeException;
  * Caught at the controller/Livewire layer and surfaced as a SweetAlert2
  * error toast - never a generic 500.
  */
-class ParentNotActiveException extends RuntimeException
+class ParentNotActiveException extends LifecycleGuardException
 {
     public static function forActivation(Model $child, Model $ancestor): self
     {

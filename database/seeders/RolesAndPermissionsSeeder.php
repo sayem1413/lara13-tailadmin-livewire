@@ -26,6 +26,11 @@ class RolesAndPermissionsSeeder extends Seeder
         'admin.notifications.preferences.edit' => ['module' => 'notifications', 'section' => 'preferences.edit'],
         'admin.users.import' => ['module' => 'users', 'section' => 'import'],
         'admin.users.export' => ['module' => 'users', 'section' => 'export'],
+        'admin.categories.import' => ['module' => 'categories', 'section' => 'import'],
+        'admin.categories.export' => ['module' => 'categories', 'section' => 'export'],
+        'admin.products.import' => ['module' => 'products', 'section' => 'import'],
+        'admin.products.export' => ['module' => 'products', 'section' => 'export'],
+        'admin.inventory.export' => ['module' => 'inventory', 'section' => 'export'],
     ];
 
     /**
@@ -49,6 +54,25 @@ class RolesAndPermissionsSeeder extends Seeder
         'admin.media.destroy',
         'admin.users.import',
         'admin.users.export',
+        'admin.categories.index',
+        'admin.categories.create',
+        'admin.categories.edit',
+        'admin.categories.destroy',
+        'admin.categories.restore',
+        'admin.categories.force-delete',
+        'admin.categories.import',
+        'admin.categories.export',
+        'admin.products.index',
+        'admin.products.create',
+        'admin.products.edit',
+        'admin.products.destroy',
+        'admin.products.restore',
+        'admin.products.force-delete',
+        'admin.products.import',
+        'admin.products.export',
+        'admin.inventory.index',
+        'admin.inventory.adjust',
+        'admin.inventory.export',
     ];
 
     /**

@@ -191,6 +191,9 @@ class RoleForm extends Component
             'notifications' => 'bell',
             'activity-log' => 'clock',
             'media' => 'upload-cloud',
+            'categories' => 'tag',
+            'products' => 'box',
+            'inventory' => 'clipboard',
             default => 'grid',
         };
     }

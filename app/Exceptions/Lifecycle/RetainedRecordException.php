@@ -3,7 +3,6 @@
 namespace App\Exceptions\Lifecycle;
 
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 /**
  * Thrown when a force-delete (direct or cascaded) would permanently
@@ -14,7 +13,7 @@ use RuntimeException;
  * the delete was triggered. Soft delete is unaffected; this only blocks
  * forceDelete().
  */
-class RetainedRecordException extends RuntimeException
+class RetainedRecordException extends LifecycleGuardException
 {
     public static function make(Model $model): self
     {

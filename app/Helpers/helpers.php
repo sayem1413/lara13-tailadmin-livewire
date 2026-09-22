@@ -48,21 +48,33 @@ if (! function_exists('wireModelName')) {
 if (! function_exists('formatPrice')) {
     /**
      * Formats a raw number into a clean currency format. Defaults to Taka
-     * (৳) since this app has no other currency anywhere — every Billing
-     * view already passes '৳' explicitly; a couple of Diagnostic views
-     * previously omitted it and silently showed a '$' instead.
+     * (৳) since this app has no other currency anywhere.
      *
-     * A negative amount (e.g. DashboardService::metrics()'s netProfit,
-     * once a branch's approved expenses exceed its revenue for the
-     * month — the first caller able to pass a negative value here) puts
-     * the minus sign before the currency symbol ("-৳500.00"), not after
-     * it ("৳-500.00", what a bare `$currency.number_format($amount, 2)`
-     * produces) — number_format() itself only ever puts the sign at the
-     * very start of its own output.
+     * Uses the Bangladeshi/Indian digit-grouping convention (lakh/crore -
+     * the last three digits form one group, every group before that is
+     * two digits: ৳10,00,000.00, not ৳1,000,000.00) rather than
+     * number_format()'s Western thousands grouping, since every caller of
+     * this helper is BDT-denominated.
+     *
+     * A negative amount puts the minus sign before the currency symbol
+     * ("-৳500.00"), not after it ("৳-500.00").
      */
     function formatPrice(float $amount, string $currency = '৳'): string
     {
-        return ($amount < 0 ? '-' : '').$currency.number_format(abs($amount), 2);
+        $sign = $amount < 0 ? '-' : '';
+        [$integer, $decimal] = explode('.', number_format(abs($amount), 2, '.', ''));
+
+        $lastThree = substr($integer, -3);
+        $remaining = substr($integer, 0, -3);
+
+        if ($remaining !== '') {
+            $remaining = (string) preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $remaining);
+            $integer = $remaining.','.$lastThree;
+        } else {
+            $integer = $lastThree;
+        }
+
+        return "{$sign}{$currency}{$integer}.{$decimal}";
     }
 }
 

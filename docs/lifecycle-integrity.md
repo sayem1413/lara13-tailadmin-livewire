@@ -474,10 +474,13 @@ that mistake into a loud FK constraint error instead of silent data loss.
 
 `ParentNotActiveException`, `CircularReferenceException`,
 `OrphanRemovalBlockedException`, `RetainedRecordException`, and
-`ChildrenExistException` (all in `App\Exceptions\Lifecycle`) are regular
-exceptions - catch them at the controller/Livewire layer and surface them as
-a SweetAlert2 error toast, the same way other user-facing failures in this
-app are handled. This module never fails silently or with a generic 500.
+`ChildrenExistException` (all in `App\Exceptions\Lifecycle`) all extend the
+common `LifecycleGuardException` - catch that one base type at the
+controller/Livewire layer (alongside `ValidationException` for the module's
+own service-layer guards, e.g. CategoryService's "still has products" check)
+and surface it as a SweetAlert2 error toast, the same way other user-facing
+failures in this app are handled. This module never fails silently or with a
+generic 500.
 
 Policies are unaffected: this module governs *what happens* once an action is
 authorized, not *who* can trigger it. A model's Policy still decides who may

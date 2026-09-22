@@ -58,6 +58,33 @@ return [
     ],
 
     [
+        'group' => 'CATALOG',
+        'items' => [
+            [
+                'label' => 'Categories',
+                'icon' => 'tag',
+                'route' => 'admin.categories.index',
+                'permission' => 'admin.categories.index',
+                'order' => 1,
+            ],
+            [
+                'label' => 'Products',
+                'icon' => 'box',
+                'route' => 'admin.products.index',
+                'permission' => 'admin.products.index',
+                'order' => 2,
+            ],
+            [
+                'label' => 'Inventory',
+                'icon' => 'clipboard',
+                'route' => 'admin.inventory.index',
+                'permission' => 'admin.inventory.index',
+                'order' => 3,
+            ],
+        ],
+    ],
+
+    [
         'group' => 'CONTENT',
         'items' => [
             [
