@@ -1,0 +1,143 @@
+<div>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-800 dark:text-white/90">Roles &amp; Permissions</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Manage roles and the permissions they grant.</p>
+        </div>
+
+        @can('create', \App\Models\Permission\Role::class)
+            <a href="{{ route('admin.roles.create') }}">
+                <x-ui.button>Add Role</x-ui.button>
+            </a>
+        @endcan
+    </div>
+
+    <x-ui.card :padded="false">
+        <div class="border-b border-gray-100 p-4 dark:border-white/10">
+            <div class="max-w-xs">
+                <x-forms.input type="search" icon="search" wire:model.live.debounce.300ms="search" placeholder="Search roles..." />
+            </div>
+        </div>
+
+        <x-ui.table>
+            <x-slot:head>
+                <tr>
+                    <th class="px-4 py-3 font-medium">Name</th>
+                    <th class="px-4 py-3 font-medium">Description</th>
+                    <th class="px-4 py-3 font-medium">Status</th>
+                    <th class="px-4 py-3 font-medium">Permissions</th>
+                    <th class="px-4 py-3 font-medium">Users</th>
+                    <th class="px-4 py-3 font-medium">&nbsp;</th>
+                </tr>
+            </x-slot:head>
+
+            <tbody class="divide-y divide-gray-100 dark:divide-white/10">
+                @forelse ($roles as $role)
+                        <tr wire:key="role-{{ $role->id }}">
+                            <td class="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $role->description ?: '—' }}</td>
+                            <td class="px-4 py-3">
+                                @if ($role->is_active)
+                                    <x-ui.badge color="green">Active</x-ui.badge>
+                                @else
+                                    <x-ui.badge color="red">Inactive</x-ui.badge>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $role->permissions_count }}</td>
+                            <td class="px-4 py-3">
+                                <a
+                                    href="{{ route('admin.users.index', ['role' => $role->name]) }}"
+                                    class="text-brand-600 hover:underline dark:text-brand-400"
+                                >
+                                    {{ $role->users_count }} {{ Str::plural('user', $role->users_count) }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-end gap-3 text-sm">
+                                    @can('update', $role)
+                                        <button type="button" wire:click="toggleActive({{ $role->id }})" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                                            {{ $role->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
+                                        <a href="{{ route('admin.roles.edit', $role) }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Edit</a>
+                                    @endcan
+                                    @can('delete', $role)
+                                        <button
+                                            type="button"
+                                            wire:click="delete({{ $role->id }})"
+                                            data-confirm="delete"
+                                            data-confirm-entity="Role"
+                                            data-confirm-name="{{ $role->name }}"
+                                            class="font-medium text-red-600 hover:underline dark:text-red-400"
+                                        >
+                                            Delete
+                                        </button>
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No roles found.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+        </x-ui.table>
+
+        <div class="divide-y divide-gray-100 md:hidden dark:divide-white/10">
+            @forelse ($roles as $role)
+                <div wire:key="role-mobile-{{ $role->id }}" class="p-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-medium text-gray-800 dark:text-white/90">{{ $role->name }}</p>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $role->permissions_count }} {{ Str::plural('permission', $role->permissions_count) }}</span>
+                    </div>
+
+                    @if ($role->description)
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $role->description }}</p>
+                    @endif
+
+                    <div class="mt-2">
+                        @if ($role->is_active)
+                            <x-ui.badge color="green">Active</x-ui.badge>
+                        @else
+                            <x-ui.badge color="red">Inactive</x-ui.badge>
+                        @endif
+                    </div>
+
+                    <a
+                        href="{{ route('admin.users.index', ['role' => $role->name]) }}"
+                        class="mt-1 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                        {{ $role->users_count }} {{ Str::plural('user', $role->users_count) }}
+                    </a>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                        @can('update', $role)
+                            <button type="button" wire:click="toggleActive({{ $role->id }})" class="min-h-11 font-medium text-gray-600 dark:text-gray-300">
+                                {{ $role->is_active ? 'Deactivate' : 'Activate' }}
+                            </button>
+                            <a href="{{ route('admin.roles.edit', $role) }}" class="flex min-h-11 items-center font-medium text-brand-600 dark:text-brand-400">Edit</a>
+                        @endcan
+                        @can('delete', $role)
+                            <button
+                                type="button"
+                                wire:click="delete({{ $role->id }})"
+                                data-confirm="delete"
+                                data-confirm-entity="Role"
+                                data-confirm-name="{{ $role->name }}"
+                                class="min-h-11 font-medium text-red-600 dark:text-red-400"
+                            >
+                                Delete
+                            </button>
+                        @endcan
+                    </div>
+                </div>
+            @empty
+                <p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No roles found.</p>
+            @endforelse
+        </div>
+
+        <x-ui.load-more :paginator="$roles" />
+    </x-ui.card>
+</div>

@@ -123,4 +123,20 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Admin Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Used by database/seeders/AdminUserSeeder.php to create the super-admin
+    | account seeded after a fresh install. Override per environment via
+    | ADMIN_EMAIL / ADMIN_PASSWORD before seeding real data.
+    |
+    */
+
+    'admin' => [
+        'email' => env('ADMIN_EMAIL', 'admin@example.com'),
+        'password' => env('ADMIN_PASSWORD', 'password'),
+    ],
+
 ];

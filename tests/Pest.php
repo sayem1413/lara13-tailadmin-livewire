@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Lifecycle\LifecycleIntegrityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +48,12 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Used by the Entity Lifecycle module's tests (tests/Feature/Lifecycle).
+ */
+function lifecycleService(): LifecycleIntegrityService
+{
+    return app(LifecycleIntegrityService::class);
 }
