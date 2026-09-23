@@ -61,6 +61,8 @@ class MediaIndex extends Component
 
     public function updatedNewFile(MediaService $mediaService): void
     {
+        Gate::authorize('admin.media.index');
+
         $this->validate();
 
         $mediaService->upload($this->newFile, (int) auth()->id());

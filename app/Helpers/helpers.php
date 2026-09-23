@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\ComponentAttributeBag;
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;

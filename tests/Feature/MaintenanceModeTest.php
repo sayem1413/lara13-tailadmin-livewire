@@ -2,7 +2,7 @@
 
 use App\Models\Permission\Permission;
 use App\Models\User;
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 
 it('allows normal access to the dashboard when maintenance mode is off', function () {
     $user = User::factory()->create();

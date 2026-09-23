@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Setting;
 
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateSettingRequest extends FormRequest

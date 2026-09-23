@@ -217,6 +217,27 @@ it('rolls back the library asset row when the media library rejects the file aft
     expect(LibraryAsset::count())->toBe(0);
 });
 
+it('forbids uploading once the admin.media.index permission is revoked mid-session', function () {
+    Storage::fake('public');
+
+    Permission::findOrCreate('admin.media.index');
+    $actor = User::factory()->create();
+    $actor->givePermissionTo('admin.media.index');
+
+    // mount() only runs once, when the component is first created - a
+    // permission revoked after that point (e.g. a Super Admin demoting
+    // this actor's role while their tab stays open) must still be caught
+    // by the upload action itself, not just at the initial page load.
+    $component = Livewire::actingAs($actor)->test(MediaIndex::class);
+
+    $actor->revokePermissionTo('admin.media.index');
+
+    $component->set('newFile', UploadedFile::fake()->image('photo.jpg'))
+        ->assertForbidden();
+
+    expect(LibraryAsset::count())->toBe(0);
+});
+
 it('forbids deleting a file without the admin.media.destroy permission', function () {
     Storage::fake('public');
 

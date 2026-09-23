@@ -3,7 +3,7 @@
 use App\Models\Permission\Permission;
 use App\Models\User;
 use App\Repositories\Interfaces\Setting\SettingRepositoryInterface;
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 

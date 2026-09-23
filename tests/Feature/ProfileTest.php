@@ -39,6 +39,21 @@ it('rejects an email already used by another user', function () {
     expect($user->fresh()->email)->not->toBe('taken@example.com');
 });
 
+it('allows reusing an email that belonged to a soft-deleted user, consistent with UserForm', function () {
+    $trashed = User::factory()->create(['email' => 'freed@example.com']);
+    $trashed->delete();
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->put(route('user-profile-information.update'), [
+        'name' => $user->name,
+        'email' => 'freed@example.com',
+    ]);
+
+    $response->assertRedirect();
+    expect($user->fresh()->email)->toBe('freed@example.com');
+});
+
 it('stores an uploaded avatar in the media library', function () {
     Storage::fake('public');
 

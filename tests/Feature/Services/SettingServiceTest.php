@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 
 it('returns the given default when a setting has not been set', function () {
     expect(app(SettingService::class)->get('app_name', 'Fallback'))->toBe('Fallback');

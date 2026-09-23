@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Admin\Settings;
 
-use App\Services\SettingService;
+use App\Services\Setting\SettingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
